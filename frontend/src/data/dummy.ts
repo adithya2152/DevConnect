@@ -1,4 +1,4 @@
-import { User, Project, Community, Conversation, Message } from '../types';
+import { User, Project, Community, Conversation, Message } from '../types/index';
 
 export const currentUser: User = {
   id: '1',
