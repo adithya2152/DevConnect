@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { projects } from './data/dummy';
-import './ProjectsPage.css';
+import { projects } from '../data/dummy.js';
+import '../styles/ProjectsPage.css';
 
 const allTags = Array.from(new Set(projects.flatMap(p => p.tags)));
 const allStatuses = Array.from(new Set(projects.map(p => p.status)));
