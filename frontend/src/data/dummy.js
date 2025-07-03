@@ -493,4 +493,22 @@ export const conversations = [
     },
     unreadCount: 0
   }
-]; 
+];
+
+export const currentUser = {
+  id: '1',
+  name: 'Alex Chen',
+  email: 'alex.chen@example.com',
+  avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  bio: 'Full-stack developer passionate about AI and open source. Building the future one commit at a time.',
+  location: 'San Francisco, CA',
+  skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML', 'Docker'],
+  linkedinUrl: 'https://linkedin.com/in/alexchen',
+  githubUrl: 'https://github.com/alexchen',
+  stackOverflowUrl: 'https://stackoverflow.com/users/alexchen',
+  joinedDate: '2023-01-15',
+  isOnline: true,
+  connections: 542,
+  projects: 23,
+  communities: 8
+}; 

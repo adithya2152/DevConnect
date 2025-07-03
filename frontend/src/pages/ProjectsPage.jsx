@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import { projects } from '../data/dummy.js';
+import { projects, currentUser } from '../data/dummy.js';
 import '../styles/ProjectsPage.css';
 
 const allTags = Array.from(new Set(projects.flatMap(p => p.tags)));
 const allStatuses = Array.from(new Set(projects.map(p => p.status)));
 
 function ProjectsPage() {
+  const [selectedTab, setSelectedTab] = useState('join'); // 'hosted' or 'join'
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [search, setSearch] = useState('');
 
-  const filteredProjects = projects.filter(project => {
+  // Filter logic based on tab
+  let filteredProjects = projects;
+  if (selectedTab === 'hosted') {
+    filteredProjects = projects.filter(project =>
+      project.contributors.some(user => user.id === currentUser.id)
+    );
+  } else if (selectedTab === 'join') {
+    filteredProjects = projects.filter(project =>
+      project.status !== 'completed' &&
+      !project.contributors.some(user => user.id === currentUser.id)
+    );
+  }
+
+  // Apply tag, status, and search filters
+  filteredProjects = filteredProjects.filter(project => {
     const tagMatch = selectedTag ? project.tags.includes(selectedTag) : true;
     const statusMatch = selectedStatus ? project.status === selectedStatus : true;
     const searchMatch = search
@@ -28,6 +43,20 @@ function ProjectsPage() {
           + Create Project (Coming Soon)
         </button>
       </header>
+      <div className="tab-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <button
+          className={selectedTab === 'join' ? 'tab-btn active' : 'tab-btn'}
+          onClick={() => setSelectedTab('join')}
+        >
+          Join Projects
+        </button>
+        <button
+          className={selectedTab === 'hosted' ? 'tab-btn active' : 'tab-btn'}
+          onClick={() => setSelectedTab('hosted')}
+        >
+          Hosted by Me
+        </button>
+      </div>
       <div className="filters">
         <input
           type="text"
