@@ -8,11 +8,16 @@ const allStatuses = Array.from(new Set(projects.map(p => p.status)));
 function ProjectsPage() {
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [search, setSearch] = useState('');
 
   const filteredProjects = projects.filter(project => {
     const tagMatch = selectedTag ? project.tags.includes(selectedTag) : true;
     const statusMatch = selectedStatus ? project.status === selectedStatus : true;
-    return tagMatch && statusMatch;
+    const searchMatch = search
+      ? project.name.toLowerCase().includes(search.toLowerCase()) ||
+        project.description.toLowerCase().includes(search.toLowerCase())
+      : true;
+    return tagMatch && statusMatch && searchMatch;
   });
 
   return (
@@ -24,6 +29,13 @@ function ProjectsPage() {
         </button>
       </header>
       <div className="filters">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search projects..."
+          className="search-bar"
+        />
         <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}>
           <option value="">All Domains/Skills</option>
           {allTags.map(tag => (
@@ -33,7 +45,7 @@ function ProjectsPage() {
         <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>
           <option value="">All Statuses</option>
           {allStatuses.map(status => (
-            <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1) }</option>
+            <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
           ))}
         </select>
       </div>
