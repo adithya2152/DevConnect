@@ -12,6 +12,8 @@ import {
   IconButton
 } from '@mui/material';
 import { Code, Group, RocketLaunch } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+
 
 const features = [
   {
@@ -32,6 +34,7 @@ const features = [
 ];
 
 export default function DevConnectLandingPage() {
+    const navigate = useNavigate();
   return (
     <Box
       sx={{
@@ -72,6 +75,7 @@ export default function DevConnectLandingPage() {
                 background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
               },
             }}
+            onClick={() => navigate('/register')}
           >
             Get Started
           </Button>
@@ -138,6 +142,7 @@ export default function DevConnectLandingPage() {
                 background: 'rgba(255,255,255,0.1)',
               },
             }}
+            onClick={()=>navigate('/projects')}
           >
             Explore Projects
           </Button>
