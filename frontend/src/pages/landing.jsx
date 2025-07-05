@@ -11,7 +11,7 @@ import {
   Link,
   IconButton
 } from '@mui/material';
-import { Code, Group, RocketLaunch } from '@mui/icons-material';
+import { Code, Group, RocketLaunch, Chat } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -31,6 +31,11 @@ const features = [
     description: 'Create teams, join projects, and turn ideas into production-ready apps.',
     icon: <RocketLaunch fontSize="large" />,
   },
+  {
+    title: 'Real-time Collaboration',
+    description: 'Chat with team members, share ideas, and coordinate project development.',
+    icon: <Chat fontSize="large" />,
+  },
 ];
 
 export default function DevConnectLandingPage() {
@@ -44,12 +49,56 @@ export default function DevConnectLandingPage() {
         fontFamily: 'Inter, sans-serif',
       }}
     >
+      {/* Navigation */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          background: 'rgba(18, 18, 18, 0.9)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          py: 2,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5" fontWeight="bold">
+              DevConnect
+            </Typography>
+            <Stack direction="row" spacing={2}>
+              <Button
+                onClick={() => navigate('/projects')}
+                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
+              >
+                Projects
+              </Button>
+              <Button
+                onClick={() => navigate('/chat')}
+                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
+              >
+                Chat
+              </Button>
+              <Button
+                onClick={() => navigate('/login')}
+                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
+              >
+                Login
+              </Button>
+            </Stack>
+          </Box>
+        </Container>
+      </Box>
+
       {/* HERO */}
       <Box
         sx={{
-          py: { xs: 8, md: 14 },
+          py: { xs: 12, md: 18 },
           px: 2,
           textAlign: 'center',
+          mt: 8, // Account for fixed navigation
         }}
       >
         <Container maxWidth="md">
@@ -59,26 +108,48 @@ export default function DevConnectLandingPage() {
           <Typography variant="h6" color="rgba(255,255,255,0.7)" mb={4}>
             Your developer network. Collaborate. Build. Ship. 🚀
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
-              borderRadius: 999,
-              px: 4,
-              py: 1.5,
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              textTransform: 'none',
-              boxShadow: '0 0 20px rgba(0,114,255,0.4)',
-              '&:hover': {
-                background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
-              },
-            }}
-            onClick={() => navigate('/register')}
-          >
-            Get Started
-          </Button>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
+                borderRadius: 999,
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                boxShadow: '0 0 20px rgba(0,114,255,0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
+                },
+              }}
+              onClick={() => navigate('/register')}
+            >
+              Get Started
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              sx={{
+                color: 'white',
+                borderColor: 'white',
+                borderRadius: 999,
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'rgba(255,255,255,0.1)',
+                },
+              }}
+              onClick={() => navigate('/chat')}
+            >
+              Try Chat
+            </Button>
+          </Stack>
         </Container>
       </Box>
 
@@ -86,7 +157,7 @@ export default function DevConnectLandingPage() {
       <Container sx={{ py: 8 }}>
         <Grid container spacing={4}>
           {features.map((feature, idx) => (
-            <Grid item xs={12} md={4} key={idx}>
+            <Grid item xs={12} md={6} lg={3} key={idx}>
               <Card
                 sx={{
                   height: '100%',
@@ -127,25 +198,45 @@ export default function DevConnectLandingPage() {
           <Typography variant="body1" color="rgba(255,255,255,0.7)" mb={3}>
             Join the platform where developers meet, collaborate, and ship ideas faster.
           </Typography>
-          <Button
-            variant="outlined"
-            size="large"
-            sx={{
-              color: 'white',
-              borderColor: 'white',
-              borderRadius: 999,
-              px: 4,
-              py: 1.2,
-              fontWeight: 'bold',
-              textTransform: 'none',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.1)',
-              },
-            }}
-            onClick={()=>navigate('/projects')}
-          >
-            Explore Projects
-          </Button>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              size="large"
+              sx={{
+                color: 'white',
+                borderColor: 'white',
+                borderRadius: 999,
+                px: 4,
+                py: 1.2,
+                fontWeight: 'bold',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'rgba(255,255,255,0.1)',
+                },
+              }}
+              onClick={()=>navigate('/projects')}
+            >
+              Explore Projects
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
+                borderRadius: 999,
+                px: 4,
+                py: 1.2,
+                fontWeight: 'bold',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
+                },
+              }}
+              onClick={() => navigate('/chat')}
+            >
+              Start Chatting
+            </Button>
+          </Stack>
         </Container>
       </Box>
 
@@ -168,7 +259,7 @@ export default function DevConnectLandingPage() {
               <Stack spacing={1}>
                 <Link href="#" color="inherit" underline="hover">Home</Link>
                 <Link href="#" color="inherit" underline="hover">Projects</Link>
-                <Link href="#" color="inherit" underline="hover">Teams</Link>
+                <Link href="#" color="inherit" underline="hover">Chat</Link>
                 <Link href="#" color="inherit" underline="hover">Support</Link>
               </Stack>
             </Grid>
