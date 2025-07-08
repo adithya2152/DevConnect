@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,36 +15,42 @@ import {
   ListItemAvatar,
   ListItemText,
   Checkbox,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  CircularProgress
 } from '@mui/material';
 import { Group, Close } from '@mui/icons-material';
-import { projects } from '../../data/dummy.js';
+import { getConnections, createGroupRoom } from '../../api/chatApi';
 
 /**
  * CreateGroupModal Component
- * Modal for creating new group chats
- * Allows selecting participants and setting group details
- * Can be linked to existing projects for project-specific chats
+ * Modal for creating new group chats with real data
  */
 function CreateGroupModal({ open, onClose, onCreateGroup }) {
   const [groupName, setGroupName] = useState('');
-  const [groupDescription, setGroupDescription] = useState('');
-  const [selectedProject, setSelectedProject] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
-  const [groupType, setGroupType] = useState('general'); // 'general' or 'project'
+  const [connections, setConnections] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
 
-  // Get all unique contributors from projects for member selection
-  const allContributors = projects.reduce((acc, project) => {
-    project.contributors.forEach(contributor => {
-      if (!acc.find(c => c.id === contributor.id)) {
-        acc.push(contributor);
+  // Load connections when modal opens
+  useEffect(() => {
+    if (open) {
+      loadConnections();
+    }
+  }, [open]);
+
+  const loadConnections = async () => {
+    try {
+      setLoading(true);
+      const response = await getConnections();
+      if (response.success) {
+        setConnections(response.data);
       }
-    });
-    return acc;
-  }, []);
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMemberToggle = (member) => {
     setSelectedMembers(prev => {
@@ -57,40 +63,34 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
     });
   };
 
-  const handleCreateGroup = () => {
-    if (!groupName.trim()) return;
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || creating) return;
 
-    const newGroup = {
-      id: Date.now().toString(),
-      name: groupName.trim(),
-      description: groupDescription.trim(),
-      type: 'group',
-      members: selectedMembers.length + 1, // +1 for current user
-      participants: [
-        { id: '1', name: 'Alex Chen' }, // Current user
-        ...selectedMembers
-      ],
-      projectId: selectedProject || null,
-      privacy: 'private',
-      createdAt: new Date().toISOString(),
-      image: 'https://images.pexels.com/photos/1181280/pexels-photo-1181280.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop'
-    };
-
-    // Call parent callback to handle group creation
-    if (onCreateGroup) {
-      onCreateGroup(newGroup);
+    try {
+      setCreating(true);
+      const memberIds = selectedMembers.map(m => m.id);
+      const response = await createGroupRoom(groupName.trim(), memberIds);
+      
+      if (response.success) {
+        // Call parent callback to handle group creation
+        if (onCreateGroup) {
+          onCreateGroup(response.data);
+        }
+        
+        // Reset form and close modal
+        handleClose();
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      // TODO: Show error message to user
+    } finally {
+      setCreating(false);
     }
-
-    // Reset form and close modal
-    handleClose();
   };
 
   const handleClose = () => {
     setGroupName('');
-    setGroupDescription('');
-    setSelectedProject('');
     setSelectedMembers([]);
-    setGroupType('general');
     onClose();
   };
 
@@ -123,51 +123,6 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
 
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
-          {/* Group Type Selection */}
-          <FormControl fullWidth>
-            <InputLabel sx={{ color: '#bbb' }}>Group Type</InputLabel>
-            <Select
-              value={groupType}
-              onChange={(e) => setGroupType(e.target.value)}
-              label="Group Type"
-              sx={{
-                color: 'white',
-                background: '#2e2e2e',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255,255,255,0.2)',
-                },
-              }}
-            >
-              <MenuItem value="general">General Discussion</MenuItem>
-              <MenuItem value="project">Project-Specific</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Project Selection (if project type) */}
-          {groupType === 'project' && (
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: '#bbb' }}>Select Project</InputLabel>
-              <Select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-                label="Select Project"
-                sx={{
-                  color: 'white',
-                  background: '#2e2e2e',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255,255,255,0.2)',
-                  },
-                }}
-              >
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={project.id}>
-                    {project.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-
           {/* Group Name */}
           <TextField
             fullWidth
@@ -187,31 +142,10 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
             InputLabelProps={{ sx: { color: '#bbb' } }}
           />
 
-          {/* Group Description */}
-          <TextField
-            fullWidth
-            label="Description (Optional)"
-            value={groupDescription}
-            onChange={(e) => setGroupDescription(e.target.value)}
-            variant="outlined"
-            multiline
-            rows={3}
-            InputProps={{
-              sx: {
-                color: 'white',
-                background: '#2e2e2e',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255,255,255,0.2)',
-                },
-              },
-            }}
-            InputLabelProps={{ sx: { color: '#bbb' } }}
-          />
-
           {/* Member Selection */}
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" mb={2}>
-              Add Members
+              Add Members ({selectedMembers.length} selected)
             </Typography>
             
             {/* Selected Members */}
@@ -220,8 +154,12 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
                 {selectedMembers.map((member) => (
                   <Chip
                     key={member.id}
-                    avatar={<Avatar src={member.avatar} />}
-                    label={member.name}
+                    avatar={
+                      <Avatar src={member.avatar}>
+                        {(member.full_name || member.username || 'U')[0].toUpperCase()}
+                      </Avatar>
+                    }
+                    label={member.full_name || member.username}
                     onDelete={() => handleMemberToggle(member)}
                     deleteIcon={<Close />}
                     sx={{
@@ -246,17 +184,20 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
                 background: '#2e2e2e',
               }}
             >
-              <List>
-                {allContributors
-                  .filter(contributor => contributor.id !== '1') // Exclude current user
-                  .map((contributor) => {
-                    const isSelected = selectedMembers.find(m => m.id === contributor.id);
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress sx={{ color: '#00c6ff' }} />
+                </Box>
+              ) : (
+                <List>
+                  {connections.map((connection) => {
+                    const isSelected = selectedMembers.find(m => m.id === connection.id);
                     
                     return (
                       <ListItem
-                        key={contributor.id}
+                        key={connection.id}
                         button
-                        onClick={() => handleMemberToggle(contributor)}
+                        onClick={() => handleMemberToggle(connection)}
                         sx={{
                           '&:hover': {
                             backgroundColor: 'rgba(255,255,255,0.05)',
@@ -273,24 +214,34 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
                           }}
                         />
                         <ListItemAvatar>
-                          <Avatar src={contributor.avatar} alt={contributor.name} />
+                          <Avatar src={connection.avatar} alt={connection.full_name || connection.username}>
+                            {(connection.full_name || connection.username || 'U')[0].toUpperCase()}
+                          </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Typography color="white" fontWeight="bold">
-                              {contributor.name}
+                              {connection.full_name || connection.username}
                             </Typography>
                           }
                           secondary={
                             <Typography color="rgba(255,255,255,0.7)" variant="body2">
-                              {contributor.location} • {contributor.skills?.slice(0, 2).join(', ')}
+                              {connection.email} • {connection.is_online ? 'Online' : 'Offline'}
                             </Typography>
                           }
                         />
                       </ListItem>
                     );
                   })}
-              </List>
+                  {connections.length === 0 && (
+                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                      <Typography color="rgba(255,255,255,0.5)">
+                        No connections found. Follow some users first to add them to groups.
+                      </Typography>
+                    </Box>
+                  )}
+                </List>
+              )}
             </Box>
           </Box>
         </Box>
@@ -310,7 +261,7 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
         </Button>
         <Button
           onClick={handleCreateGroup}
-          disabled={!groupName.trim()}
+          disabled={!groupName.trim() || creating}
           variant="contained"
           sx={{
             background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
@@ -323,7 +274,7 @@ function CreateGroupModal({ open, onClose, onCreateGroup }) {
             },
           }}
         >
-          Create Group
+          {creating ? <CircularProgress size={20} /> : 'Create Group'}
         </Button>
       </DialogActions>
     </Dialog>

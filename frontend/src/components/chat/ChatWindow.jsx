@@ -6,12 +6,10 @@ import {
   IconButton,
   Avatar,
   Paper,
-  Stack,
   Badge,
-  Divider,
   Menu,
   MenuItem,
-  Chip
+  CircularProgress
 } from '@mui/material';
 import {
   Send,
@@ -23,27 +21,35 @@ import {
   Info,
   Group
 } from '@mui/icons-material';
-import { currentUser } from '../../data/dummy.js';
+import { getRoomMessages, sendMessage, createWebSocketConnection } from '../../api/chatApi';
 
 /**
  * ChatWindow Component
- * Main chat interface for displaying messages and sending new ones
- * Supports both direct messages and group chats
- * Includes message history, typing indicators, and file attachments
+ * Main chat interface with real-time messaging
  */
-function ChatWindow({ conversation, onSendMessage }) {
+function ChatWindow({ conversation }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [typingUsers, setTypingUsers] = useState(new Set());
   const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
+  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'; // Mock user ID
 
-  // Mock messages for demonstration
+  // Load messages when conversation changes
   useEffect(() => {
     if (conversation) {
-      // Generate mock messages based on conversation type
-      const mockMessages = generateMockMessages(conversation);
-      setMessages(mockMessages);
+      loadMessages();
+      setupWebSocket();
     }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, [conversation]);
 
   // Auto-scroll to bottom when new messages arrive
@@ -51,23 +57,75 @@ function ChatWindow({ conversation, onSendMessage }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (message.trim() && conversation) {
-      const newMessage = {
-        id: Date.now().toString(),
-        sender: currentUser,
-        content: message.trim(),
-        timestamp: new Date().toISOString(),
-        type: 'text'
-      };
-      
-      setMessages(prev => [...prev, newMessage]);
-      setMessage('');
-      
-      // Call parent callback for API integration
-      if (onSendMessage) {
-        onSendMessage(conversation.id, newMessage);
+  const loadMessages = async () => {
+    if (!conversation) return;
+    
+    try {
+      setLoading(true);
+      const response = await getRoomMessages(conversation.id);
+      if (response.success) {
+        setMessages(response.data);
       }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupWebSocket = () => {
+    if (!conversation) return;
+    
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    
+    wsRef.current = createWebSocketConnection(conversation.id, (data) => {
+      switch (data.type) {
+        case 'new_message':
+          setMessages(prev => [...prev, data.data]);
+          break;
+        case 'typing_indicator':
+          if (data.is_typing) {
+            setTypingUsers(prev => new Set([...prev, data.user_id]));
+          } else {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(data.user_id);
+              return newSet;
+            });
+          }
+          break;
+        case 'user_online':
+        case 'user_offline':
+          // Handle user online/offline status
+          console.log(`User ${data.user_id} is ${data.type.split('_')[1]}`);
+          break;
+        default:
+          console.log('Unknown WebSocket message:', data);
+      }
+    });
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !conversation || sending) return;
+
+    const messageContent = message.trim();
+    setMessage('');
+    setSending(true);
+
+    try {
+      const response = await sendMessage(conversation.id, messageContent);
+      if (response.success) {
+        // Message will be added via WebSocket
+        console.log('Message sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Restore message on error
+      setMessage(messageContent);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -75,6 +133,14 @@ function ChatWindow({ conversation, onSendMessage }) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleTyping = (isTyping) => {
+    if (wsRef.current) {
+      wsRef.current.send({
+        type: isTyping ? 'typing_start' : 'typing_stop'
+      });
     }
   };
 
@@ -105,9 +171,32 @@ function ChatWindow({ conversation, onSendMessage }) {
   }
 
   const isGroupChat = conversation.type === 'group';
-  const chatPartner = isGroupChat 
-    ? null 
-    : conversation.participants?.find(p => p.id !== currentUser.id);
+  const getDisplayName = () => {
+    if (isGroupChat) {
+      return conversation.name;
+    } else {
+      const otherMember = conversation.members?.find(m => m.id !== currentUserId);
+      return otherMember?.full_name || otherMember?.username || 'Unknown User';
+    }
+  };
+
+  const getDisplayAvatar = () => {
+    if (isGroupChat) {
+      return null;
+    } else {
+      const otherMember = conversation.members?.find(m => m.id !== currentUserId);
+      return otherMember?.avatar || null;
+    }
+  };
+
+  const isOnline = () => {
+    if (isGroupChat) {
+      return conversation.members?.some(m => m.is_online) || false;
+    } else {
+      const otherMember = conversation.members?.find(m => m.id !== currentUserId);
+      return otherMember?.is_online || false;
+    }
+  };
 
   return (
     <Box
@@ -132,7 +221,6 @@ function ChatWindow({ conversation, onSendMessage }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {isGroupChat ? (
             <Avatar
-              src={conversation.image}
               sx={{
                 background: 'linear-gradient(45deg, #00c6ff, #0072ff)',
                 width: 48,
@@ -145,29 +233,34 @@ function ChatWindow({ conversation, onSendMessage }) {
             <Badge
               color="success"
               variant="dot"
-              invisible={!chatPartner?.isOnline}
+              invisible={!isOnline()}
               anchorOrigin={{
                 vertical: 'bottom',
                 horizontal: 'right',
               }}
             >
               <Avatar
-                src={chatPartner?.avatar}
-                alt={chatPartner?.name}
+                src={getDisplayAvatar()}
+                alt={getDisplayName()}
                 sx={{ width: 48, height: 48 }}
-              />
+              >
+                {getDisplayName()[0]?.toUpperCase()}
+              </Avatar>
             </Badge>
           )}
           
           <Box>
             <Typography variant="h6" color="white" fontWeight="bold">
-              {isGroupChat ? conversation.name : chatPartner?.name}
+              {getDisplayName()}
             </Typography>
             <Typography variant="body2" color="rgba(255,255,255,0.7)">
               {isGroupChat 
-                ? `${conversation.members} members` 
-                : chatPartner?.isOnline ? 'Online' : 'Offline'
+                ? `${conversation.members?.length || 0} members` 
+                : isOnline() ? 'Online' : 'Offline'
               }
+              {typingUsers.size > 0 && (
+                <span> • {typingUsers.size === 1 ? 'Someone is' : `${typingUsers.size} people are`} typing...</span>
+              )}
             </Typography>
           </Box>
         </Box>
@@ -205,7 +298,7 @@ function ChatWindow({ conversation, onSendMessage }) {
             },
           }}
         >
-          <MenuItem onClick={handleMenuClose}>View Profile</MenuItem>
+          <MenuItem onClick={handleMenuClose}>View Details</MenuItem>
           <MenuItem onClick={handleMenuClose}>Mute Notifications</MenuItem>
           <MenuItem onClick={handleMenuClose}>Clear Chat</MenuItem>
           {isGroupChat && <MenuItem onClick={handleMenuClose}>Leave Group</MenuItem>}
@@ -223,82 +316,90 @@ function ChatWindow({ conversation, onSendMessage }) {
           gap: 2,
         }}
       >
-        {messages.map((msg, index) => {
-          const isOwnMessage = msg.sender.id === currentUser.id;
-          const showAvatar = !isOwnMessage && (
-            index === 0 || 
-            messages[index - 1].sender.id !== msg.sender.id
-          );
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress sx={{ color: '#00c6ff' }} />
+          </Box>
+        ) : (
+          messages.map((msg, index) => {
+            const isOwnMessage = msg.sender_id === currentUserId;
+            const showAvatar = !isOwnMessage && (
+              index === 0 || 
+              messages[index - 1].sender_id !== msg.sender_id
+            );
 
-          return (
-            <Box
-              key={msg.id}
-              sx={{
-                display: 'flex',
-                justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                alignItems: 'flex-end',
-                gap: 1,
-              }}
-            >
-              {!isOwnMessage && (
-                <Avatar
-                  src={msg.sender.avatar}
-                  alt={msg.sender.name}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    visibility: showAvatar ? 'visible' : 'hidden',
-                  }}
-                />
-              )}
-              
+            return (
               <Box
+                key={msg.id}
                 sx={{
-                  maxWidth: '70%',
                   display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
+                  justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                  alignItems: 'flex-end',
+                  gap: 1,
                 }}
               >
-                {!isOwnMessage && showAvatar && isGroupChat && (
-                  <Typography
-                    variant="caption"
-                    color="rgba(255,255,255,0.7)"
-                    sx={{ mb: 0.5, ml: 1 }}
+                {!isOwnMessage && (
+                  <Avatar
+                    src={msg.sender?.avatar}
+                    alt={msg.sender?.full_name || msg.sender?.username}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      visibility: showAvatar ? 'visible' : 'hidden',
+                    }}
                   >
-                    {msg.sender.name}
-                  </Typography>
+                    {(msg.sender?.full_name || msg.sender?.username || 'U')[0]?.toUpperCase()}
+                  </Avatar>
                 )}
                 
-                <Paper
+                <Box
                   sx={{
-                    p: 1.5,
-                    background: isOwnMessage
-                      ? 'linear-gradient(90deg, #00c6ff, #0072ff)'
-                      : 'rgba(255,255,255,0.1)',
-                    color: 'white',
-                    borderRadius: 2,
-                    borderTopLeftRadius: !isOwnMessage && showAvatar ? 0.5 : 2,
-                    borderTopRightRadius: isOwnMessage && showAvatar ? 0.5 : 2,
+                    maxWidth: '70%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
                   }}
                 >
-                  <Typography variant="body2">{msg.content}</Typography>
-                </Paper>
-                
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.5)"
-                  sx={{ mt: 0.5, mx: 1 }}
-                >
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </Typography>
+                  {!isOwnMessage && showAvatar && isGroupChat && (
+                    <Typography
+                      variant="caption"
+                      color="rgba(255,255,255,0.7)"
+                      sx={{ mb: 0.5, ml: 1 }}
+                    >
+                      {msg.sender?.full_name || msg.sender?.username}
+                    </Typography>
+                  )}
+                  
+                  <Paper
+                    sx={{
+                      p: 1.5,
+                      background: isOwnMessage
+                        ? 'linear-gradient(90deg, #00c6ff, #0072ff)'
+                        : 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      borderRadius: 2,
+                      borderTopLeftRadius: !isOwnMessage && showAvatar ? 0.5 : 2,
+                      borderTopRightRadius: isOwnMessage && showAvatar ? 0.5 : 2,
+                    }}
+                  >
+                    <Typography variant="body2">{msg.content}</Typography>
+                  </Paper>
+                  
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.5)"
+                    sx={{ mt: 0.5, mx: 1 }}
+                  >
+                    {new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          );
-        })}
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </Box>
 
@@ -320,8 +421,12 @@ function ChatWindow({ conversation, onSendMessage }) {
             multiline
             maxRows={4}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              handleTyping(e.target.value.length > 0);
+            }}
             onKeyPress={handleKeyPress}
+            onBlur={() => handleTyping(false)}
             placeholder="Type a message..."
             variant="outlined"
             InputProps={{
@@ -342,65 +447,25 @@ function ChatWindow({ conversation, onSendMessage }) {
           
           <IconButton
             onClick={handleSendMessage}
-            disabled={!message.trim()}
+            disabled={!message.trim() || sending}
             sx={{
-              background: message.trim() 
+              background: message.trim() && !sending
                 ? 'linear-gradient(90deg, #00c6ff, #0072ff)' 
                 : 'rgba(255,255,255,0.1)',
               color: 'white',
               '&:hover': {
-                background: message.trim() 
+                background: message.trim() && !sending
                   ? 'linear-gradient(90deg, #0072ff, #00c6ff)' 
                   : 'rgba(255,255,255,0.2)',
               },
             }}
           >
-            <Send />
+            {sending ? <CircularProgress size={20} /> : <Send />}
           </IconButton>
         </Box>
       </Box>
     </Box>
   );
-}
-
-// Helper function to generate mock messages for demonstration
-function generateMockMessages(conversation) {
-  const isGroupChat = conversation.type === 'group';
-  const participants = isGroupChat ? [
-    currentUser,
-    { id: '2', name: 'Sarah Rodriguez', avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop' },
-    { id: '3', name: 'Marcus Thompson', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop' }
-  ] : conversation.participants;
-
-  return [
-    {
-      id: '1',
-      sender: participants[1] || participants[0],
-      content: isGroupChat 
-        ? 'Hey everyone! How\'s the project coming along?' 
-        : 'Hey! How\'s your AI project going?',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      type: 'text'
-    },
-    {
-      id: '2',
-      sender: currentUser,
-      content: isGroupChat 
-        ? 'Making good progress on the ML models. The accuracy is improving!' 
-        : 'It\'s going well! Just implemented the neural network architecture.',
-      timestamp: new Date(Date.now() - 3000000).toISOString(),
-      type: 'text'
-    },
-    {
-      id: '3',
-      sender: participants[2] || participants[1],
-      content: isGroupChat 
-        ? 'Great! I\'ve set up the CI/CD pipeline. Ready for deployment testing.' 
-        : 'That sounds awesome! Would love to see the code.',
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
-      type: 'text'
-    }
-  ];
 }
 
 export default ChatWindow;

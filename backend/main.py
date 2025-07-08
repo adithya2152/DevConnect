@@ -1,13 +1,13 @@
 from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel
-from email_utils import send_otp_email  # Ensure this module is correctly implemented
+from email_utils import send_otp_email
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
 import os
 from dotenv import load_dotenv
 from fastapi import UploadFile, File, Form
 from typing import Optional
-
+from chat_routes import router as chat_router
 
 load_dotenv()
 
@@ -21,6 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include chat routes
+app.include_router(chat_router)
+
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 
@@ -31,7 +34,6 @@ supabase = create_client(
     supabase_url,
     supabase_key
 )
-
 
 # Temporary storage (replace with database in production)
 otp_storage = {}
@@ -82,8 +84,6 @@ async def verify_otp(request: VerifyOTPRequest):
         "message": "OTP verified successfully"
     }
 
-
-
 class UserRegister(BaseModel):
     email: str
     password: str
@@ -108,11 +108,22 @@ async def register(
 
         # Check if registration was successful
         if hasattr(auth_response, 'user') and auth_response.user:
+            # Create profile in profiles table
+            profile_data = {
+                "id": auth_response.user.id,
+                "email": email,
+                "username": username,
+                "full_name": username,  # Use username as full_name for now
+                "is_online": True
+            }
+            
+            # Insert into profiles table
+            supabase.table('profiles').insert(profile_data).execute()
+            
             return {
                 "status": "success",
                 "user_id": auth_response.user.id,
                 "email": auth_response.user.email,
-                # Include any other relevant user data
             }
         else:
             # Check for error message (Supabase v2 structure)
@@ -125,3 +136,7 @@ async def register(
         if "User already registered" in error_detail:
             error_detail = "This email is already registered"
         raise HTTPException(status_code=400, detail=error_detail)
+
+@app.get("/")
+async def root():
+    return {"message": "DevConnect Chat API"}

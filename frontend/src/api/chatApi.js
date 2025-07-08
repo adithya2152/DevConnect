@@ -1,371 +1,250 @@
 /**
  * Chat API Service
- * Handles all chat-related API calls
- * Includes endpoints for messages, conversations, and group management
+ * Handles all chat-related API calls with real backend integration
  */
 
-const API_BASE_URL = 'http://localhost:8000/api'; // Backend API base URL
+const API_BASE_URL = 'http://localhost:8000/api/chat';
 
-// Mock API responses for development
-const MOCK_MODE = true; // Set to false when backend is ready
+// Get auth token from localStorage
+const getAuthToken = () => {
+  return localStorage.getItem('authToken') || 'mock_token'; // Use mock_token for development
+};
 
-/**
- * Get all conversations for the current user
- * @returns {Promise<Array>} List of conversations
- */
-export const getConversations = async () => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          data: [
-            {
-              id: '1',
-              type: 'direct',
-              participants: ['user1', 'user2'],
-              lastMessage: {
-                content: 'Hey, how are you?',
-                timestamp: new Date().toISOString(),
-                senderId: 'user2'
-              },
-              unreadCount: 2
-            }
-          ]
-        });
-      }, 500);
-    });
+// Helper function for API calls
+const apiCall = async (endpoint, options = {}) => {
+  const token = getAuthToken();
+  
+  const defaultOptions = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'API request failed');
   }
 
+  return await response.json();
+};
+
+// User and connection APIs
+export const searchUsers = async (query) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/conversations`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch conversations');
-    }
-    
-    return await response.json();
+    const response = await apiCall(`/users/search?q=${encodeURIComponent(query)}`);
+    return response;
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error('Error searching users:', error);
     throw error;
   }
 };
 
-/**
- * Get messages for a specific conversation
- * @param {string} conversationId - The conversation ID
- * @param {number} page - Page number for pagination
- * @param {number} limit - Number of messages per page
- * @returns {Promise<Array>} List of messages
- */
-export const getMessages = async (conversationId, page = 1, limit = 50) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          data: [
-            {
-              id: '1',
-              senderId: 'user2',
-              content: 'Hello there!',
-              timestamp: new Date(Date.now() - 3600000).toISOString(),
-              type: 'text'
-            },
-            {
-              id: '2',
-              senderId: 'user1',
-              content: 'Hi! How are you doing?',
-              timestamp: new Date(Date.now() - 1800000).toISOString(),
-              type: 'text'
-            }
-          ],
-          pagination: {
-            page,
-            limit,
-            total: 2,
-            hasMore: false
-          }
-        });
-      }, 300);
-    });
-  }
-
+export const getConnections = async () => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/messages?page=${page}&limit=${limit}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch messages');
-    }
-    
-    return await response.json();
+    const response = await apiCall('/users/connections');
+    return response;
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('Error getting connections:', error);
     throw error;
   }
 };
 
-/**
- * Send a new message
- * @param {string} conversationId - The conversation ID
- * @param {Object} messageData - Message data
- * @returns {Promise<Object>} Created message
- */
-export const sendMessage = async (conversationId, messageData) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          data: {
-            id: Date.now().toString(),
-            ...messageData,
-            timestamp: new Date().toISOString(),
-            senderId: 'user1' // Current user
-          }
-        });
-      }, 200);
-    });
-  }
-
+export const followUser = async (userId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
+    const response = await apiCall(`/users/${userId}/follow`, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+};
+
+export const unfollowUser = async (userId) => {
+  try {
+    const response = await apiCall(`/users/${userId}/follow`, {
+      method: 'DELETE'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    throw error;
+  }
+};
+
+// Room/conversation APIs
+export const getUserRooms = async () => {
+  try {
+    const response = await apiCall('/rooms');
+    return response;
+  } catch (error) {
+    console.error('Error getting rooms:', error);
+    throw error;
+  }
+};
+
+export const createPrivateRoom = async (userId) => {
+  try {
+    const response = await apiCall(`/rooms/private/${userId}`, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error creating private room:', error);
+    throw error;
+  }
+};
+
+export const createGroupRoom = async (name, memberIds) => {
+  try {
+    const response = await apiCall('/rooms/group', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      },
-      body: JSON.stringify(messageData)
+      body: JSON.stringify({
+        name,
+        member_ids: memberIds
+      })
     });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send message');
-    }
-    
-    return await response.json();
+    return response;
+  } catch (error) {
+    console.error('Error creating group room:', error);
+    throw error;
+  }
+};
+
+export const getRoomMembers = async (roomId) => {
+  try {
+    const response = await apiCall(`/rooms/${roomId}/members`);
+    return response;
+  } catch (error) {
+    console.error('Error getting room members:', error);
+    throw error;
+  }
+};
+
+// Message APIs
+export const getRoomMessages = async (roomId, page = 1, limit = 50) => {
+  try {
+    const response = await apiCall(`/rooms/${roomId}/messages?page=${page}&limit=${limit}`);
+    return response;
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    throw error;
+  }
+};
+
+export const sendMessage = async (roomId, content, fileUrl = null) => {
+  try {
+    const response = await apiCall(`/rooms/${roomId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        content,
+        file_url: fileUrl
+      })
+    });
+    return response;
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;
   }
 };
 
-/**
- * Create a new group chat
- * @param {Object} groupData - Group creation data
- * @returns {Promise<Object>} Created group
- */
+export const markMessageAsRead = async (messageId) => {
+  try {
+    const response = await apiCall(`/messages/${messageId}/read`, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    throw error;
+  }
+};
+
+// Notification APIs
+export const getNotifications = async (limit = 50) => {
+  try {
+    const response = await apiCall(`/notifications?limit=${limit}`);
+    return response;
+  } catch (error) {
+    console.error('Error getting notifications:', error);
+    throw error;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const response = await apiCall(`/notifications/${notificationId}/read`, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};
+
+// WebSocket connection
+export const createWebSocketConnection = (roomId, onMessage) => {
+  const ws = new WebSocket(`ws://localhost:8000/api/chat/ws/${roomId}`);
+  
+  ws.onopen = () => {
+    console.log(`Connected to room ${roomId}`);
+  };
+  
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    onMessage(data);
+  };
+  
+  ws.onclose = () => {
+    console.log(`Disconnected from room ${roomId}`);
+  };
+  
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+  
+  return {
+    send: (message) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(message));
+      }
+    },
+    close: () => {
+      ws.close();
+    }
+  };
+};
+
+// Legacy API functions for backward compatibility
+export const getConversations = getUserRooms;
+export const getMessages = getRoomMessages;
 export const createGroup = async (groupData) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          data: {
-            id: Date.now().toString(),
-            ...groupData,
-            createdAt: new Date().toISOString(),
-            createdBy: 'user1'
-          }
-        });
-      }, 500);
-    });
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      },
-      body: JSON.stringify(groupData)
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to create group');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating group:', error);
-    throw error;
-  }
+  return createGroupRoom(groupData.name, groupData.participants || []);
 };
-
-/**
- * Join a group chat
- * @param {string} groupId - The group ID
- * @returns {Promise<Object>} Updated group data
- */
 export const joinGroup = async (groupId) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: 'Successfully joined group'
-        });
-      }, 300);
-    });
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/join`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to join group');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error joining group:', error);
-    throw error;
-  }
+  // This would need to be implemented as a separate endpoint
+  console.log('Join group not implemented yet');
+  return { success: true, message: 'Join group not implemented yet' };
 };
-
-/**
- * Leave a group chat
- * @param {string} groupId - The group ID
- * @returns {Promise<Object>} Success response
- */
 export const leaveGroup = async (groupId) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: 'Successfully left group'
-        });
-      }, 300);
-    });
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/leave`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to leave group');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error leaving group:', error);
-    throw error;
-  }
+  // This would need to be implemented as a separate endpoint
+  console.log('Leave group not implemented yet');
+  return { success: true, message: 'Leave group not implemented yet' };
 };
-
-/**
- * Mark conversation as read
- * @param {string} conversationId - The conversation ID
- * @returns {Promise<Object>} Success response
- */
 export const markAsRead = async (conversationId) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: 'Marked as read'
-        });
-      }, 100);
-    });
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/read`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to mark as read');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error marking as read:', error);
-    throw error;
-  }
-};
-
-/**
- * Search for users to start conversations
- * @param {string} query - Search query
- * @returns {Promise<Array>} List of users
- */
-export const searchUsers = async (query) => {
-  if (MOCK_MODE) {
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          data: [
-            {
-              id: 'user2',
-              name: 'Sarah Rodriguez',
-              avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-              isOnline: true
-            }
-          ]
-        });
-      }, 400);
-    });
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to search users');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error searching users:', error);
-    throw error;
-  }
+  // This would mark all messages in a room as read
+  console.log('Mark conversation as read not implemented yet');
+  return { success: true, message: 'Mark as read not implemented yet' };
 };
