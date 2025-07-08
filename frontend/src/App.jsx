@@ -4,6 +4,7 @@ import DevConnectLandingPage from './pages/landing';
 import Register from './pages/auth/register';
 import Login from './pages/auth/login';
 import ChatPage from './pages/ChatPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 function App() {
@@ -15,6 +16,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login/>} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
       </Routes>
     </Router>
   );

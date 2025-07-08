@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import UploadFile, File, Form
 from typing import Optional
 from chat_routes import router as chat_router
+from profile_routes import router as profile_router
 
 load_dotenv()
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 # Include chat routes
 app.include_router(chat_router)
+app.include_router(profile_router)
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")

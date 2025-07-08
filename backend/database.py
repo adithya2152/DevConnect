@@ -107,6 +107,71 @@ class DatabaseManager:
             print(f"Error unfollowing user: {e}")
             return False
     
+    async def is_following(self, follower_id: str, following_id: str) -> bool:
+        """Check if a user is following another user"""
+        try:
+            response = self.client.table('user_connections').select('id').eq(
+                'follower_id', follower_id
+            ).eq('following_id', following_id).execute()
+            
+            return len(response.data) > 0
+        except Exception as e:
+            print(f"Error checking follow status: {e}")
+            return False
+    
+    async def get_followers_count(self, user_id: str) -> int:
+        """Get the number of followers for a user"""
+        try:
+            response = self.client.table('user_connections').select('id').eq(
+                'following_id', user_id
+            ).execute()
+            
+            return len(response.data)
+        except Exception as e:
+            print(f"Error getting followers count: {e}")
+            return 0
+    
+    async def get_following_count(self, user_id: str) -> int:
+        """Get the number of users a user is following"""
+        try:
+            response = self.client.table('user_connections').select('id').eq(
+                'follower_id', user_id
+            ).execute()
+            
+            return len(response.data)
+        except Exception as e:
+            print(f"Error getting following count: {e}")
+            return 0
+    
+    async def get_user_followers(self, user_id: str) -> List[Dict]:
+        """Get users that are following the specified user"""
+        try:
+            response = self.client.table('user_connections').select(
+                'follower_id, profiles!user_connections_follower_id_fkey(id, username, full_name, email, bio, is_online, last_seen)'
+            ).eq('following_id', user_id).execute()
+            
+            followers = []
+            for conn in response.data or []:
+                if conn.get('profiles'):
+                    followers.append(conn['profiles'])
+            
+            return followers
+        except Exception as e:
+            print(f"Error getting user followers: {e}")
+            return []
+    
+    async def update_user_profile(self, user_id: str, update_data: Dict) -> bool:
+        """Update user profile"""
+        try:
+            # Add updated_at timestamp
+            update_data['updated_at'] = datetime.now().isoformat()
+            
+            response = self.client.table('profiles').update(update_data).eq('id', user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            print(f"Error updating user profile: {e}")
+            return False
+    
     # Room operations
     async def get_user_rooms(self, user_id: str) -> List[Dict]:
         """Get all rooms for a user"""

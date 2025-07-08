@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { Search, Group, Person, Add, Notifications } from '@mui/icons-material';
 import { getUserRooms, getConnections, searchUsers, createPrivateRoom, getNotifications } from '../../api/chatApi';
+import UserProfileModal from './UserProfileModal';
 
 /**
  * ChatSidebar Component
@@ -33,6 +34,8 @@ function ChatSidebar({ selectedConversation, onSelectConversation, onCreateGroup
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   // Load initial data
   useEffect(() => {
@@ -124,6 +127,25 @@ function ChatSidebar({ selectedConversation, onSelectConversation, onCreateGroup
     } catch (error) {
       console.error('Error starting chat:', error);
     }
+  };
+
+  const handleUserClick = (user) => {
+    setSelectedUserId(user.id);
+    setProfileModalOpen(true);
+  };
+
+  const handleProfileStartChat = (room) => {
+    // Add to rooms list if not already there
+    setRooms(prev => {
+      const exists = prev.find(r => r.id === room.id);
+      if (!exists) {
+        return [room, ...prev];
+      }
+      return prev;
+    });
+    
+    // Select the room
+    onSelectConversation(room);
   };
 
   const handleTabChange = (event, newValue) => {
@@ -263,7 +285,7 @@ function ChatSidebar({ selectedConversation, onSelectConversation, onCreateGroup
                         <ListItem
                           key={user.id}
                           button
-                          onClick={() => handleStartChat(user)}
+                          onClick={() => handleUserClick(user)}
                           sx={{
                             py: 2,
                             px: 2,
@@ -315,7 +337,7 @@ function ChatSidebar({ selectedConversation, onSelectConversation, onCreateGroup
                     <ListItem
                       key={user.id}
                       button
-                      onClick={() => handleStartChat(user)}
+                      onClick={() => handleUserClick(user)}
                       sx={{
                         py: 2,
                         px: 2,
@@ -510,6 +532,14 @@ function ChatSidebar({ selectedConversation, onSelectConversation, onCreateGroup
           </>
         )}
       </Box>
+      
+      {/* User Profile Modal */}
+      <UserProfileModal
+        open={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        userId={selectedUserId}
+        onStartChat={handleProfileStartChat}
+      />
     </Box>
   );
 }
