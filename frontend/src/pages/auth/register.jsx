@@ -7,12 +7,25 @@ import {
   TextField,
   Button,
   Paper,
-  Stack,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Avatar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Visibility, VisibilityOff, CloudUpload, CheckCircle } from '@mui/icons-material';
 
 export default function Register() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1); // 1: Basic info, 2: OTP, 3: Password & Resume
+  const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  // const [resume, setResume] = useState(null);
+  const [error, setError] = useState(null);
+  // const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -21,6 +34,7 @@ export default function Register() {
     interests: '',
     blog: '',
     research: '',
+    password: '',
   });
 
   const handleChange = (e) => {
@@ -30,9 +44,129 @@ export default function Register() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Submitted:', formData);
+  // const handleResumeUpload = (e) => {
+  //   const file = e.target.files[0];
+  //   if (file && file.type === 'application/pdf') {
+  //     setResume(file);
+  //   } else {
+  //     alert('Please upload a PDF file');
+  //   }
+  // };
+
+ const handleSendOtp = async () => {
+  if (!formData.email) {
+    alert('Please enter your email first');
+    return;
+  }
+  
+  try {
+    setIsSubmitting(true);
+    
+    const response = await axios.post(
+      'http://localhost:8000/send-otp',
+      { email: formData.email },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+
+    if (response.status === 200) {
+      setOtpSent(true);
+      setStep(2);
+    }
+  } catch (error) {
+    console.error("OTP sending failed:", error);
+    alert(error.response?.data?.detail || 'Failed to send OTP. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+ const verifyOtp = async () => {
+  if (otp.length !== 6) {
+    alert('Please enter a valid 6-digit OTP');
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+    
+    const response = await axios.post(
+      'http://localhost:8000/verify-otp',
+      {
+        email: formData.email,  // Include email
+        otp: otp
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+
+    if (response.data.success) {
+      setStep(3); // Only proceed if verification succeeds
+    } else {
+      alert(response.data.message || 'OTP verification failed');
+    }
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    alert(error.response?.data?.detail || 'Error verifying OTP. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!formData.email || !formData.password) {
+    setError('Email and password are required');
+    return;
+  }
+
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    const response = await axios.post(
+      'http://localhost:8000/register',
+      {
+        email: formData.email,
+        password: formData.password
+      },
+      {
+        headers: {
+           'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+      }
+    );
+
+    if (response.data.status === "success") {
+      navigate('/dashboard');
+    }
+  } catch (error) {
+    console.error("Registration error:", error);
+    setError(
+      error.response?.data?.detail || 
+      'Registration failed. Please try again.'
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const isStep1Valid = () => {
+    return formData.email && formData.username;
+  };
+
+  const isStep3Valid = () => {
+    return formData.password.length >= 8 ;
   };
 
   return (
@@ -65,171 +199,249 @@ export default function Register() {
               p: 5,
               background: 'linear-gradient(135deg, #232526, #414345)',
               color: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
             }}
           >
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
-              Create Your DevConnect Profile
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-              Join a thriving developer network. Showcase your projects, connect with tech minds, and explore collaborative opportunities.
-            </Typography>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
+                {step === 1 ? 'Create Your Profile' : step === 2 ? 'Verify Email' : 'Secure Your Account'}
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                {step === 1 ? 'Join our developer community with just a few details.'
+                  : step === 2 ? `We've sent a 6-digit code to ${formData.email}`
+                  : 'Add a password and resume to complete registration'}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, mt: 'auto' }}>
+              {[1, 2, 3].map((stepNumber) => (
+                <Box
+                  key={stepNumber}
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    bgcolor: step >= stepNumber ? '#00c6ff' : 'rgba(255,255,255,0.2)',
+                    transition: 'all 0.3s ease',
+                  }}
+                />
+              ))}
+            </Box>
           </Box>
 
           {/* Right Form Panel */}
           <Box sx={{ flex: 1.5, p: 5 }}>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
-                {/* Top Row */}
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="email"
-                    label="Email"
-                    fullWidth
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{
-                      sx: {
-                        color: 'white',
-                        background: '#1e1e1e',
+            {step === 1 && (
+              <form>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <TextField
+                      name="email"
+                      label="Email"
+                      fullWidth
+                      required
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      variant="outlined"
+                      InputProps={{
+                        sx: {
+                          color: 'white',
+                          background: '#1e1e1e',
+                          borderRadius: 2,
+                        },
+                      }}
+                      InputLabelProps={{ sx: { color: '#bbb' } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      name="username"
+                      label="Username"
+                      fullWidth
+                      required
+                      value={formData.username}
+                      onChange={handleChange}
+                      variant="outlined"
+                      InputProps={{
+                        sx: {
+                          color: 'white',
+                          background: '#1e1e1e',
+                          borderRadius: 2,
+                        },
+                      }}
+                      InputLabelProps={{ sx: { color: '#bbb' } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button
+                      fullWidth
+                      onClick={handleSendOtp}
+                      disabled={!isStep1Valid() || isSubmitting}
+                      variant="contained"
+                      sx={{
+                        background: 'linear-gradient(to right, #00c6ff, #0072ff)',
+                        borderRadius: 999,
+                        py: 1.5,
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        boxShadow: '0 0 10px rgba(0,114,255,0.5)',
+                        '&:hover': {
+                          background: 'linear-gradient(to right, #0072ff, #00c6ff)',
+                        },
+                      }}
+                    >
+                      {isSubmitting ? <CircularProgress size={24} /> : 'Send OTP'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </form>
+            )}
+
+            {step === 2 && (
+              <Box>
+                <TextField
+                  fullWidth
+                  label="6-digit OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  variant="outlined"
+                  sx={{ mb: 3 }}
+                  InputProps={{
+                    sx: {
+                      color: 'white',
+                      background: '#1e1e1e',
+                      borderRadius: 2,
+                    },
+                  }}
+                  InputLabelProps={{ sx: { color: '#bbb' } }}
+                />
+                <Button
+                  fullWidth
+                  onClick={verifyOtp}
+                  disabled={otp.length !== 6}
+                  variant="contained"
+                  sx={{
+                    background: 'linear-gradient(to right, #00c6ff, #0072ff)',
+                    borderRadius: 999,
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    boxShadow: '0 0 10px rgba(0,114,255,0.5)',
+                    '&:hover': {
+                      background: 'linear-gradient(to right, #0072ff, #00c6ff)',
+                    },
+                  }}
+                >
+                  Verify OTP
+                </Button>
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 2, textAlign: 'center', color: '#00c6ff', cursor: 'pointer' }}
+                  onClick={handleSendOtp}
+                >
+                  Resend OTP
+                </Typography>
+              </Box>
+            )}
+
+            {step === 3 && (
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <TextField
+                      name="password"
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      fullWidth
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      variant="outlined"
+                      InputProps={{
+                        sx: {
+                          color: 'white',
+                          background: '#1e1e1e',
+                          borderRadius: 2,
+                        },
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                              sx={{ color: '#bbb' }}
+                            >
+                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      InputLabelProps={{ sx: { color: '#bbb' } }}
+                    />
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', mt: 1 }}>
+                      Must be at least 8 characters
+                    </Typography>
+                  </Grid>
+
+                  {/* <Grid item xs={12}>
+                    <Button
+                      component="label"
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<CloudUpload />}
+                      sx={{
+                        py: 2,
+                        border: '2px dashed rgba(255,255,255,0.2)',
                         borderRadius: 2,
-                      },
-                    }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="username"
-                    label="Username"
-                    fullWidth
-                    required
-                    value={formData.username}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{
-                      sx: {
                         color: 'white',
-                        background: '#1e1e1e',
-                        borderRadius: 2,
-                      },
-                    }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
+                        '&:hover': {
+                          borderColor: '#00c6ff',
+                        },
+                      }}
+                    >
+                      {resume ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CheckCircle color="success" />
+                          {resume.name}
+                        </Box>
+                      ) : (
+                        'Upload Resume (PDF)'
+                      )}
+                      <input
+                        type="file"
+                        hidden
+                        accept="application/pdf"
+                        onChange={handleResumeUpload}
+                      />
+                    </Button>
+                  </Grid> */}
 
-                {/* Row 2 */}
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="github"
-                    label="GitHub Profile"
-                    fullWidth
-                    value={formData.github}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{ sx: { color: 'white', background: '#1e1e1e', borderRadius: 2 } }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
+                  <Grid item xs={12}>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      disabled={!isStep3Valid() || isSubmitting}
+                      variant="contained"
+                      sx={{
+                        background: 'linear-gradient(to right, #00c6ff, #0072ff)',
+                        borderRadius: 999,
+                        py: 1.5,
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        boxShadow: '0 0 10px rgba(0,114,255,0.5)',
+                        '&:hover': {
+                          background: 'linear-gradient(to right, #0072ff, #00c6ff)',
+                        },
+                      }}
+                    >
+                      {isSubmitting ? <CircularProgress size={24} /> : 'Complete Registration'}
+                    </Button>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="linkedin"
-                    label="LinkedIn Profile"
-                    fullWidth
-                    value={formData.linkedin}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{ sx: { color: 'white', background: '#1e1e1e', borderRadius: 2 } }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
-
-                {/* Row 3 */}
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="interests"
-                    label="Interests (comma-separated)"
-                    fullWidth
-                    value={formData.interests}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{ sx: { color: 'white', background: '#1e1e1e', borderRadius: 2 } }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    name="blog"
-                    label="Blog / Portfolio URL"
-                    fullWidth
-                    value={formData.blog}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{ sx: { color: 'white', background: '#1e1e1e', borderRadius: 2 } }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
-
-                {/* Research Row */}
-                <Grid item xs={12}>
-                  <TextField
-                    name="research"
-                    label="Research Interests / Topics"
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    value={formData.research}
-                    onChange={handleChange}
-                    variant="outlined"
-                    InputProps={{ sx: { color: 'white', background: '#1e1e1e', borderRadius: 2 } }}
-                    InputLabelProps={{ sx: { color: '#bbb' } }}
-                  />
-                </Grid>
-
-                {/* Submit */}
-                <Grid item xs={12}>
-  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 , ml: 5}}>
-    <Button
-      type="submit"
-      variant="contained"
-      sx={{
-        background: 'linear-gradient(to right, #00c6ff, #0072ff)',
-        borderRadius: 999,
-        py: 1.2,
-        px: 4,
-        fontWeight: 'bold',
-        fontSize: '1rem',
-        boxShadow: '0 0 10px rgba(0,114,255,0.5)',
-        '&:hover': {
-          background: 'linear-gradient(to right, #0072ff, #00c6ff)',
-        },
-      }}
-    >
-      Submit
-    </Button>
-  </Box>
-</Grid>
-<Grid item xs={12}>
-  <Typography
-    variant="body2"
-    align="center"
-    sx={{ mt: 3, color: 'rgba(255,255,255,0.7)' }}
-  >
-    Already have an account?{' '}
-    <Typography
-      component="a"
-      onClick={() => navigate('/login')}
-      sx={{ color: '#00c6ff', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}
-    >
-      Login
-    </Typography>
-  </Typography>
-</Grid>
-
-
-              </Grid>
-            </form>
+              </form>
+            )}
           </Box>
         </Paper>
       </Container>

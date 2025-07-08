@@ -1,0 +1,127 @@
+from fastapi import FastAPI, HTTPException, Body
+from pydantic import BaseModel
+from email_utils import send_otp_email  # Ensure this module is correctly implemented
+from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client
+import os
+from dotenv import load_dotenv
+from fastapi import UploadFile, File, Form
+from typing import Optional
+
+
+load_dotenv()
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+
+if not supabase_url or not supabase_key:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY environment variables must be set")
+
+supabase = create_client(
+    supabase_url,
+    supabase_key
+)
+
+
+# Temporary storage (replace with database in production)
+otp_storage = {}
+
+class EmailRequest(BaseModel):
+    email: str
+
+class VerifyOTPRequest(BaseModel):
+    email: str
+    otp: str
+
+@app.post("/send-otp")
+async def send_otp(request: EmailRequest):
+    otp = send_otp_email(request.email)
+    if not otp:
+        raise HTTPException(status_code=500, detail="Failed to send OTP")
+    
+    # Store OTP with email (in production, use database with expiration)
+    otp_storage[request.email] = otp
+    
+    return {
+        "status": 200,
+        "message": "OTP sent successfully",
+        # Remove "otp" in production - only for demo
+    }
+
+@app.post("/verify-otp")
+async def verify_otp(request: VerifyOTPRequest):
+    stored_otp = otp_storage.get(request.email)
+    
+    if not stored_otp:
+        raise HTTPException(
+            status_code=400,
+            detail="No OTP found for this email. Request a new one."
+        )
+    
+    if request.otp != stored_otp:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid OTP"
+        )
+    
+    # Clear OTP after successful verification
+    del otp_storage[request.email]
+    
+    return {
+        "success": True,
+        "message": "OTP verified successfully"
+    }
+
+
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+
+@app.post("/register")
+async def register(
+    email: str = Form(...),
+    password: str = Form(...),
+    username: str = Form(None),  # Optional field
+):
+    try:
+        # Register user with Supabase
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {
+                    "username": username,  # Add additional user metadata here
+                }
+            }
+        })
+
+        # Check if registration was successful
+        if hasattr(auth_response, 'user') and auth_response.user:
+            return {
+                "status": "success",
+                "user_id": auth_response.user.id,
+                "email": auth_response.user.email,
+                # Include any other relevant user data
+            }
+        else:
+            # Check for error message (Supabase v2 structure)
+            error_message = getattr(auth_response, 'message', None) or "Registration failed"
+            raise HTTPException(status_code=400, detail=error_message)
+
+    except Exception as e:
+        # Handle specific Supabase errors if needed
+        error_detail = str(e)
+        if "User already registered" in error_detail:
+            error_detail = "This email is already registered"
+        raise HTTPException(status_code=400, detail=error_detail)
