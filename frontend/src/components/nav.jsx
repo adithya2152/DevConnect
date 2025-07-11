@@ -12,6 +12,13 @@ import {
   TextField,
   InputAdornment,
   debounce,
+  ListItem,
+  CircularProgress,
+  styled, 
+  Paper,
+   ListItemText,
+   List,
+  ListItemAvatar
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -20,7 +27,23 @@ import { useAuthStatus } from "../hooks/useAuthStatus";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 
+const SearchResults = styled(Paper)(() => ({
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  right: 0,
+  zIndex: 999,
+  maxHeight: 300,
+  overflowY: "auto",
+  borderRadius: "0 0 10px 10px",
+  backgroundColor: "#1f2937",
+  color: "white",
+}));
+
+
+
 export default function NavBar() {
+
   const { isAuthenticated, loading } = useAuthStatus();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -67,6 +90,20 @@ export default function NavBar() {
     debouncedSearch(val);
   }
 
+  const handleSelect =(item) =>
+  {
+    switch(item.type)
+    {
+      case "dev":
+        // navigate(`/devs/${item.id}`);
+        print(item)
+        break;
+      case "project":
+        // navigate(`/projects/${item.id}`);
+        print(item)
+        break;
+    }
+  }
   const debouncedSearch = debounce(async(query)=>
   {
     if(!query.trim())
@@ -77,11 +114,12 @@ export default function NavBar() {
     try {
       
       setSearchLoading(true);
-      const[devRes , projectRes] = await Promise.all([
+      const[devRes ] = await Promise.all([
         axios.get(`http://localhost:8000/search/devs?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}}),
-        axios.get(`http://localhost:8000/search/projects?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}})
+        // axios.get(`http://localhost:8000/search/projects?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}})
       ]);
-      const combined = [...devRes.data.map((item)=>({type : "dev" , ...item})) , ...projectRes.data.map((item)=>({type : "project" , ...item}))];
+      // const combined = [...devRes.data.map((item)=>({type : "dev" , ...item})) , ...projectRes.data.map((item)=>({type : "project" , ...item}))];
+      const combined = [...devRes.data.map((item)=>({type : "dev" , ...item}))];
       setSearchResults(combined);
     } catch (error) {
       console.error("Search error:", error);
@@ -108,28 +146,67 @@ export default function NavBar() {
         </Typography>
 
         {isAuthenticated && (
-          <TextField
-            placeholder="Search devs or projects..."
-            size="small"
-            variant="outlined"
-            value={searchQuery}
-            onChange={handleChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#9CA3AF" }} />
-                </InputAdornment>
-              ),
-              sx: {
-                backgroundColor: "#374151",
-                color: "white",
-                borderRadius: 2,
-                input: { color: "white" },
-              },
-            }}
-            sx={{ width: 300 }}
-          />
+  <Box sx={{ position: "relative", width: 300 }}>
+    <TextField
+      placeholder="Search devs or projects..."
+      size="small"
+      variant="outlined"
+      value={searchQuery}
+      onChange={handleChange}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <SearchIcon sx={{ color: "#9CA3AF" }} />
+          </InputAdornment>
+        ),
+        sx: {
+          backgroundColor: "#374151",
+          color: "white",
+          borderRadius: 2,
+          input: { color: "white" },
+        },
+      }}
+      fullWidth
+    />
+
+    {searchQuery && (
+      <SearchResults>
+        {Searchloading ? (
+          <ListItem>
+            <CircularProgress size={20} /> &nbsp; Loading...
+          </ListItem>
+        ) : searchResults.length === 0 ? (
+          <ListItem>
+            <ListItemText primary="No results found" />
+          </ListItem>
+        ) : (
+          <List>
+            {searchResults.map((item, idx) => (
+              <ListItem
+                key={idx}
+                onClick={() => handleSelect(item)}
+                component="div"
+                sx={{ cursor: "pointer" }}
+              >
+                <ListItemAvatar>
+                  <Avatar sx={{ bgcolor: "#6366f1" }}>
+                    {item.username?.charAt(0)?.toUpperCase() || "U"}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={item.full_name || item.name || item.username || "Unnamed Developer"}
+                  secondary={item.type}
+                />
+
+              </ListItem>
+            ))}
+          </List>
         )}
+      </SearchResults>
+    )}
+  </Box>
+)}
+
 
         {isAuthenticated ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

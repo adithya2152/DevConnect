@@ -10,7 +10,7 @@ from typing import Optional
 from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
-from search.searchRoute import sea
+from search.searchRoute import search_app
 
 
 
@@ -39,6 +39,7 @@ supabase = create_client(
 )
 
 app.mount("/chat", chat_app)
+app.mount("/search", search_app)
 
 
 # Temporary storage (replace with database in production)
