@@ -9,12 +9,16 @@ import {
   Link,
   Grid
 } from '@mui/material';
+import axios from 'axios';
 
 const Login= () => {
   const [credentials, setCredentials] = useState({
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setCredentials(prev => ({
@@ -23,10 +27,34 @@ const Login= () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
     console.log('Logging in with:', credentials);
     // 🔗 Connect to backend here
+    try {
+      const res = await axios.post("http://localhost:8000/login",
+        {
+          email: credentials.email,
+          password: credentials.password,
+        }
+      );
+      console.log('Login response:', res.data);
+      if (res.data.status === 'success') {
+        // Store tokens in localStorage
+        localStorage.setItem('access_token', res.data.access_token);
+        localStorage.setItem('refresh_token', res.data.refresh_token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        console.log('User logged in successfully:', res.data.user);
+        window.location.href = '/dashboard';
+      } else {
+        setError(res.data.message || 'Login failed. Please try again.');
+      }
+      
+    } catch (error) {
+      
+      console.error('Login error:', error);
+      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+    }
   };
 
   return (

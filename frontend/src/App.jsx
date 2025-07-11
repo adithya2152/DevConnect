@@ -4,6 +4,7 @@ import DevConnectLandingPage from './pages/landing';
 import Register from './pages/auth/register';
 import Login from './pages/auth/login';
 import ChatPage from './pages/ChatPage';
+import Dashboard from './pages/dashboard';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login/>} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );

@@ -7,6 +7,11 @@ import os
 from dotenv import load_dotenv
 from fastapi import UploadFile, File, Form
 from typing import Optional
+from fastapi import Depends
+from auth import verify_token
+ 
+
+
 
 
 load_dotenv()
@@ -35,6 +40,7 @@ supabase = create_client(
 
 # Temporary storage (replace with database in production)
 otp_storage = {}
+
 
 class EmailRequest(BaseModel):
     email: str
@@ -108,11 +114,17 @@ async def register(
 
         # Check if registration was successful
         if hasattr(auth_response, 'user') and auth_response.user:
+            print("User registered successfully:", auth_response.user)
+            print("auth Response:", auth_response.session)
             return {
                 "status": "success",
-                "user_id": auth_response.user.id,
-                "email": auth_response.user.email,
-                # Include any other relevant user data
+                "access_token": auth_response.session.access_token ,
+                "refresh_token": auth_response.session.refresh_token,
+                "user": {
+                    "id": auth_response.user.id,
+                    "email": auth_response.user.email,
+                    "username": auth_response.user.user_metadata.get("username")
+                }
             }
         else:
             # Check for error message (Supabase v2 structure)
@@ -125,3 +137,46 @@ async def register(
         if "User already registered" in error_detail:
             error_detail = "This email is already registered"
         raise HTTPException(status_code=400, detail=error_detail)
+    
+@app.post("/login")
+async def login(request: UserRegister):
+    try:
+        # Authenticate user with Supabase
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": request.email,
+            "password":request.password
+        })
+        # Check if login was successful
+        if hasattr(auth_response, 'user') and auth_response.user:
+            return {
+                "status": "success",
+                "user_id": auth_response.user.id,
+                "email": auth_response.user.email,
+                "access_token": auth_response.session.access_token,
+                "refresh_token": auth_response.session.refresh_token,
+                "user": {
+                    "id": auth_response.user.id,
+                    "email": auth_response.user.email,
+                    "username": auth_response.user.user_metadata.get("username")
+                },
+                # Include any other relevant user data
+            }
+        else:
+            # Check for error message (Supabase v2 structure)
+            error_message = getattr(auth_response, 'message', None) or "Login failed"
+            raise HTTPException(status_code=400, detail=error_message)
+    except Exception as e:
+        # Handle specific Supabase errors if needed
+        error_detail = str(e)
+        if "Invalid login credentials" in error_detail:
+            error_detail = "Invalid email or password"
+        raise HTTPException(status_code=400, detail=error_detail)
+
+@app.get("/api/protected")
+async def protected(payload: dict = Depends(verify_token)):
+   
+    return {
+        "status": "success",
+        "user_id": payload["sub"],
+        "email": payload["email"]
+    }
