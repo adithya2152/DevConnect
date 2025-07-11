@@ -73,3 +73,21 @@ async def get_projects_with_members():
         return None
     
 # async def get_projects():
+
+# Insert a new project into app_projects
+def insert_app_project(project_data: dict):
+    try:
+        response = supabase.table("app_projects").insert(project_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error inserting project: {e}")
+        return None
+
+# Insert a new member into app_project_members
+def insert_app_project_member(member_data: dict):
+    try:
+        response = supabase.table("app_project_members").insert(member_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error inserting project member: {e}")
+        return None

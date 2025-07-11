@@ -24,7 +24,11 @@ import {
   Paper,
   Badge,
   Tooltip,
-  InputAdornment
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Autocomplete,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import {
@@ -49,6 +53,7 @@ import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
 import useAuthGuard from '../hooks/useAuthGuarf';
+import { createProject, applyToProject } from '../api/chatApi';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -207,6 +212,47 @@ function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Create Project Modal State
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: '',
+    description: '',
+    detailed_description: '',
+    status: 'active',
+    project_type: '',
+    domain: '',
+    difficulty_level: 'intermediate',
+    required_skills: [],
+    tech_stack: [],
+    programming_languages: [],
+    estimated_duration: '',
+    team_size_min: 1,
+    team_size_max: 5,
+    is_remote: true,
+    timezone_preference: '',
+    github_url: '',
+    demo_url: '',
+    figma_url: '',
+    documentation_url: '',
+    image_url: '',
+    is_recruiting: true,
+    is_public: true,
+    collaboration_type: 'open',
+    tags: [],
+    deadline: '',
+    started_at: '',
+    completed_at: '',
+  });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createSuccess, setCreateSuccess] = useState('');
+
+  // Apply to Join State
+  const [applyLoading, setApplyLoading] = useState({}); // projectId: bool
+  const [applySuccess, setApplySuccess] = useState({}); // projectId: string
+  const [applyError, setApplyError] = useState({}); // projectId: string
+  const [appliedProjects, setAppliedProjects] = useState([]); // projectIds
+
   // Get logged-in user
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
@@ -241,6 +287,14 @@ function ProjectsPage() {
     };
     fetchProjects();
   }, []);
+
+  // After fetching projects, mark already applied projects
+  useEffect(() => {
+    if (projects.length > 0 && userId) {
+      const applied = projects.filter(p => (p.app_project_members || []).some(m => m.user_id === userId)).map(p => p.id);
+      setAppliedProjects(applied);
+    }
+  }, [projects, userId]);
 
   // Extract unique values for filters from real data
   const allDomains = [...new Set(projects.map(p => p.domain).filter(Boolean))];
@@ -284,6 +338,76 @@ function ProjectsPage() {
     }
   };
 
+  // Create Project Handlers
+  const handleCreateOpen = () => {
+    setCreateOpen(true);
+    setCreateError('');
+    setCreateSuccess('');
+  };
+  const handleCreateClose = () => {
+    setCreateOpen(false);
+    setCreateForm({
+      title: '', description: '', detailed_description: '', status: 'active', project_type: '', domain: '', difficulty_level: 'intermediate', required_skills: [], tech_stack: [], programming_languages: [], estimated_duration: '', team_size_min: 1, team_size_max: 5, is_remote: true, timezone_preference: '', github_url: '', demo_url: '', figma_url: '', documentation_url: '', image_url: '', is_recruiting: true, is_public: true, collaboration_type: 'open', tags: [], deadline: '', started_at: '', completed_at: '',
+    });
+    setCreateError('');
+    setCreateSuccess('');
+  };
+  const handleCreateChange = (e) => {
+    const { name, value } = e.target;
+    setCreateForm(f => ({ ...f, [name]: value }));
+  };
+  const handleCreateArrayChange = (name, value) => {
+    setCreateForm(f => ({ ...f, [name]: value.split(',').map(s => s.trim()).filter(Boolean) }));
+  };
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+    setCreateSuccess('');
+    try {
+      const payload = { ...createForm, created_by: userId };
+      await createProject(payload);
+      setCreateSuccess('Project created!');
+      handleCreateClose();
+      // Refresh projects
+      setLoading(true);
+      const res = await axios.get('http://localhost:8000/api/app_projects_with_members');
+      const data = res.data.projects;
+      const projectsWithMembers = (data || []).map(project => ({
+        ...project,
+        members: (project.app_project_members || []).map(m => ({
+          id: m.profiles?.id,
+          name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+          avatar: m.profiles?.avatar || '',
+          email: m.profiles?.email || '',
+          role: m.role,
+          status: m.status,
+        }))
+      }));
+      setProjects(projectsWithMembers);
+    } catch (err) {
+      setCreateError('Failed to create project');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  // Apply to Join Handler
+  const handleApply = async (projectId) => {
+    setApplyLoading(a => ({ ...a, [projectId]: true }));
+    setApplyError(a => ({ ...a, [projectId]: '' }));
+    setApplySuccess(a => ({ ...a, [projectId]: '' }));
+    try {
+      await applyToProject({ project_id: projectId, user_id: userId });
+      setApplySuccess(a => ({ ...a, [projectId]: 'Applied!' }));
+      setAppliedProjects(ap => [...ap, projectId]);
+    } catch (err) {
+      setApplyError(a => ({ ...a, [projectId]: 'Failed to apply' }));
+    } finally {
+      setApplyLoading(a => ({ ...a, [projectId]: false }));
+    }
+  };
+
   return (
     <>
       <NavBar />
@@ -314,7 +438,7 @@ function ProjectsPage() {
                   Discover, create, and join exciting developer projects
                 </Typography>
               </Box>
-              <GradientButton startIcon={<Plus size={20} />}>
+              <GradientButton startIcon={<Plus size={20} />} onClick={handleCreateOpen}>
                 Create Project
               </GradientButton>
             </Box>
@@ -409,7 +533,7 @@ function ProjectsPage() {
                       >
                         <MenuItem value="">All Domains</MenuItem>
                         {allDomains.map(domain => (
-                          <MenuItem key={domain} value={domain}>
+                          <MenuItem key={domain} value={domain} sx={{ color: '#fff' }}>
                             {domain.replace('_', ' ')}
                           </MenuItem>
                         ))}
@@ -429,7 +553,7 @@ function ProjectsPage() {
                       >
                         <MenuItem value="">All Statuses</MenuItem>
                         {allStatuses.map(status => (
-                          <MenuItem key={status} value={status}>
+                          <MenuItem key={status} value={status} sx={{ color: '#fff' }}>
                             {status.replace('_', ' ')}
                           </MenuItem>
                         ))}
@@ -449,7 +573,7 @@ function ProjectsPage() {
                       >
                         <MenuItem value="">All Types</MenuItem>
                         {allTypes.map(type => (
-                          <MenuItem key={type} value={type}>
+                          <MenuItem key={type} value={type} sx={{ color: '#fff' }}>
                             {type}
                           </MenuItem>
                         ))}
@@ -469,7 +593,7 @@ function ProjectsPage() {
                       >
                         <MenuItem value="">All Skills</MenuItem>
                         {allSkills.map(skill => (
-                          <MenuItem key={skill} value={skill}>
+                          <MenuItem key={skill} value={skill} sx={{ color: '#fff' }}>
                             {skill}
                           </MenuItem>
                         ))}
@@ -680,8 +804,8 @@ function ProjectsPage() {
                       {/* Action Buttons */}
                       <Stack direction="row" spacing={1}>
                         {selectedTab === 0 && (
-                          <GradientButton fullWidth>
-                            Apply to Join
+                          <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
+                            {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
                           </GradientButton>
                         )}
                         {selectedTab === 1 && (
@@ -704,6 +828,661 @@ function ProjectsPage() {
               ))
             )}
           </Grid>
+
+          {/* Create Project Modal */}
+          <Dialog open={createOpen} onClose={handleCreateClose} maxWidth="md" fullWidth sx={{ alignItems: 'flex-start' }} PaperProps={{ sx: { background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(24px)', minWidth: { md: 700 }, position: 'relative' } }}>
+            <IconButton onClick={handleCreateClose} sx={{ position: 'absolute', top: 12, right: 12, color: '#fff', zIndex: 10 }}>
+              <X size={28} />
+            </IconButton>
+            <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: 28, letterSpacing: 1 }}>Create New Project</DialogTitle>
+            <DialogContent sx={{ p: 4, overflowY: 'auto', maxHeight: '90vh' }}>
+              <Box component="form" onSubmit={handleCreateSubmit} sx={{ width: '100%', mt: 2 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Title"
+                      name="title"
+                      value={createForm.title}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Code size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Description"
+                      name="description"
+                      value={createForm.description}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <MessageSquare size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={12}>
+                    <TextField
+                      label="Detailed Description"
+                      name="detailed_description"
+                      value={createForm.detailed_description}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      multiline
+                      rows={3}
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Code size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Estimated Duration"
+                      name="estimated_duration"
+                      value={createForm.estimated_duration}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Clock size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      label="Team Size (Min)"
+                      name="team_size_min"
+                      type="number"
+                      value={createForm.team_size_min}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Users size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      label="Team Size (Max)"
+                      name="team_size_max"
+                      type="number"
+                      value={createForm.team_size_max}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Users size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Status</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.status}
+                        onChange={e => setCreateForm(f => ({ ...f, status: String(e.target.value) }))}
+                        label="Status"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { active: 'Active', completed: 'Completed', on_hold: 'On Hold', cancelled: 'Cancelled' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="active" sx={{ color: '#fff' }}>Active</MenuItem>
+                        <MenuItem value="completed" sx={{ color: '#fff' }}>Completed</MenuItem>
+                        <MenuItem value="on_hold" sx={{ color: '#fff' }}>On Hold</MenuItem>
+                        <MenuItem value="cancelled" sx={{ color: '#fff' }}>Cancelled</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Project Type</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.project_type}
+                        onChange={e => setCreateForm(f => ({ ...f, project_type: String(e.target.value) }))}
+                        label="Project Type"
+                        sx={{ color: '#fff', '& .MuiSelect-select, & .MuiSelect-outlined': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { full_stack: 'Full Stack', frontend: 'Frontend', backend: 'Backend', mobile: 'Mobile', design: 'Design', devops: 'DevOps' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="full_stack" sx={{ color: '#fff' }}>Full Stack</MenuItem>
+                        <MenuItem value="frontend" sx={{ color: '#fff' }}>Frontend</MenuItem>
+                        <MenuItem value="backend" sx={{ color: '#fff' }}>Backend</MenuItem>
+                        <MenuItem value="mobile" sx={{ color: '#fff' }}>Mobile</MenuItem>
+                        <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
+                        <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Domain</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.domain}
+                        onChange={e => setCreateForm(f => ({ ...f, domain: String(e.target.value) }))}
+                        label="Domain"
+                        sx={{ color: '#fff', '& .MuiSelect-select, & .MuiSelect-outlined': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { web_development: 'Web Development', mobile_development: 'Mobile Development', backend_development: 'Backend Development', data_science: 'Data Science', machine_learning: 'Machine Learning', ai_ml: 'AI/ML', blockchain: 'Blockchain', security: 'Security', testing: 'Testing', devops: 'DevOps', design: 'Design', product: 'Product', research: 'Research', other: 'Other' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="web_development" sx={{ color: '#fff' }}>Web Development</MenuItem>
+                        <MenuItem value="mobile_development" sx={{ color: '#fff' }}>Mobile Development</MenuItem>
+                        <MenuItem value="backend_development" sx={{ color: '#fff' }}>Backend Development</MenuItem>
+                        <MenuItem value="data_science" sx={{ color: '#fff' }}>Data Science</MenuItem>
+                        <MenuItem value="machine_learning" sx={{ color: '#fff' }}>Machine Learning</MenuItem>
+                        <MenuItem value="ai_ml" sx={{ color: '#fff' }}>AI/ML</MenuItem>
+                        <MenuItem value="blockchain" sx={{ color: '#fff' }}>Blockchain</MenuItem>
+                        <MenuItem value="security" sx={{ color: '#fff' }}>Security</MenuItem>
+                        <MenuItem value="testing" sx={{ color: '#fff' }}>Testing</MenuItem>
+                        <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
+                        <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
+                        <MenuItem value="product" sx={{ color: '#fff' }}>Product</MenuItem>
+                        <MenuItem value="research" sx={{ color: '#fff' }}>Research</MenuItem>
+                        <MenuItem value="other" sx={{ color: '#fff' }}>Other</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Difficulty Level</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.difficulty_level}
+                        onChange={e => setCreateForm(f => ({ ...f, difficulty_level: String(e.target.value) }))}
+                        label="Difficulty Level"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced', expert: 'Expert' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="beginner" sx={{ color: '#fff' }}>Beginner</MenuItem>
+                        <MenuItem value="intermediate" sx={{ color: '#fff' }}>Intermediate</MenuItem>
+                        <MenuItem value="advanced" sx={{ color: '#fff' }}>Advanced</MenuItem>
+                        <MenuItem value="expert" sx={{ color: '#fff' }}>Expert</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Required Skills (comma-separated)"
+                      name="required_skills"
+                      value={createForm.required_skills.join(', ')}
+                      onChange={(e) => handleCreateArrayChange('required_skills', e.target.value)}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Users size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={[]}
+                      value={createForm.tech_stack}
+                      onChange={(e, v) => setCreateForm(f => ({ ...f, tech_stack: v }))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderInput={(params) => <TextField {...params} label="Tech Stack" fullWidth placeholder="Enter tech stack..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={[]}
+                      value={createForm.programming_languages}
+                      onChange={(e, v) => setCreateForm(f => ({ ...f, programming_languages: v }))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderInput={(params) => <TextField {...params} label="Programming Languages" fullWidth placeholder="Enter programming languages..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Is Remote</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.is_remote ? 'true' : 'false'}
+                        onChange={e => setCreateForm(f => ({ ...f, is_remote: String(e.target.value) === 'true' }))}
+                        label="Is Remote"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { true: 'Yes', false: 'No' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
+                        <MenuItem value="false" sx={{ color: '#fff' }}>No</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Timezone Preference"
+                      name="timezone_preference"
+                      value={createForm.timezone_preference}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Github URL"
+                      name="github_url"
+                      value={createForm.github_url}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <GitBranch size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Demo URL"
+                      name="demo_url"
+                      value={createForm.demo_url}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <GitBranch size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Figma URL"
+                      name="figma_url"
+                      value={createForm.figma_url}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Code size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Documentation URL"
+                      name="documentation_url"
+                      value={createForm.documentation_url}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Code size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Image URL"
+                      name="image_url"
+                      value={createForm.image_url}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Code size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Is Recruiting</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.is_recruiting ? 'true' : 'false'}
+                        onChange={e => setCreateForm(f => ({ ...f, is_recruiting: String(e.target.value) === 'true' }))}
+                        label="Is Recruiting"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { true: 'Yes', false: 'No' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
+                        <MenuItem value="false" sx={{ color: '#fff' }}>No</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Is Public</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.is_public ? 'true' : 'false'}
+                        onChange={e => setCreateForm(f => ({ ...f, is_public: String(e.target.value) === 'true' }))}
+                        label="Is Public"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { true: 'Yes', false: 'No' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
+                        <MenuItem value="false" sx={{ color: '#fff' }}>No</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth sx={{ minWidth: 180 }}>
+                      <InputLabel sx={{ color: '#fff' }} shrink>Collaboration Type</InputLabel>
+                      <StyledSelect
+                        fullWidth
+                        value={createForm.collaboration_type}
+                        onChange={e => setCreateForm(f => ({ ...f, collaboration_type: String(e.target.value) }))}
+                        label="Collaboration Type"
+                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
+                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
+                        renderValue={selected => {
+                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
+                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
+                          const labelMap = { open: 'Open', closed: 'Closed', private: 'Private' };
+                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        }}
+                      >
+                        <MenuItem value="open" sx={{ color: '#fff' }}>Open</MenuItem>
+                        <MenuItem value="closed" sx={{ color: '#fff' }}>Closed</MenuItem>
+                        <MenuItem value="private" sx={{ color: '#fff' }}>Private</MenuItem>
+                      </StyledSelect>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={[]}
+                      value={createForm.tags}
+                      onChange={(e, v) => setCreateForm(f => ({ ...f, tags: v }))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderInput={(params) => <TextField {...params} label="Tags" fullWidth placeholder="Enter tags..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Deadline (YYYY-MM-DD)"
+                      name="deadline"
+                      value={createForm.deadline}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Calendar size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Started At (YYYY-MM-DD)"
+                      name="started_at"
+                      value={createForm.started_at}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Calendar size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Completed At (YYYY-MM-DD)"
+                      name="completed_at"
+                      value={createForm.completed_at}
+                      onChange={handleCreateChange}
+                      fullWidth
+                      InputLabelProps={{ style: { color: '#fff' } }}
+                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        <InputAdornment position="start">
+                          <Calendar size={20} color="#9ca3af" />
+                        </InputAdornment>
+                      ) }}
+                      sx={{
+                        input: { color: '#fff' },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#fff' },
+                          '&:hover fieldset': { borderColor: '#fff' },
+                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  startIcon={<Plus size={20} />}
+                  sx={{
+                    background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    padding: '12px 24px',
+                    boxShadow: '0 4px 16px rgba(0,114,255,0.15)',
+                    color: '#fff',
+                    mt: 3,
+                    fontSize: 18,
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                  disabled={createLoading}
+                >
+                  {createLoading ? 'Creating...' : 'Create Project'}
+                </Button>
+                {createError && (
+                  <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                    {createError}
+                  </Typography>
+                )}
+                {createSuccess && (
+                  <Typography color="success" variant="body2" sx={{ mt: 1 }}>
+                    {createSuccess}
+                  </Typography>
+                )}
+              </Box>
+            </DialogContent>
+          </Dialog>
 
           {/* Coming Soon Notice */}
           <FilterCard sx={{ mt: 8, textAlign: 'center' }}>
