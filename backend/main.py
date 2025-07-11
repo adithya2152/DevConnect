@@ -11,6 +11,7 @@ from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
 from search.searchRoute import search_app
+from db import get_projects_with_members
 
 
 
@@ -130,16 +131,21 @@ async def register(
             }
             supabase.table("profiles").insert(user_data).execute()
             print("User data inserted into profiles table:", user_data)
-            return {
-                "status": "success",
-                "access_token": auth_response.session.access_token ,
-                "refresh_token": auth_response.session.refresh_token,
-                "user": {
-                    "id": auth_response.user.id,
-                    "email": auth_response.user.email,
-                    "username": auth_response.user.user_metadata.get("username")
+
+            # Check if session exists before accessing tokens
+            if hasattr(auth_response, 'session') and auth_response.session is not None:
+                return {
+                    "status": "success",
+                    "access_token": auth_response.session.access_token ,
+                    "refresh_token": auth_response.session.refresh_token,
+                    "user": {
+                        "id": auth_response.user.id,
+                        "email": auth_response.user.email,
+                        "username": auth_response.user.user_metadata.get("username")
+                    }
                 }
-            }
+            else:
+                raise HTTPException(status_code=400, detail="No session returned from Supabase. Registration may have failed.")
         else:
             # Check for error message (Supabase v2 structure)
             error_message = getattr(auth_response, 'message', None) or "Registration failed"
@@ -164,20 +170,23 @@ async def login(request: UserRegister):
         if hasattr(auth_response, 'user') and auth_response.user:
             #insert ot profiles table 
 
-            
-            return {
-                "status": "success",
-                "user_id": auth_response.user.id,
-                "email": auth_response.user.email,
-                "access_token": auth_response.session.access_token,
-                "refresh_token": auth_response.session.refresh_token,
-                "user": {
-                    "id": auth_response.user.id,
+            # Check if session exists before accessing tokens
+            if hasattr(auth_response, 'session') and auth_response.session is not None:
+                return {
+                    "status": "success",
+                    "user_id": auth_response.user.id,
                     "email": auth_response.user.email,
-                    "username": auth_response.user.user_metadata.get("username")
-                },
-                # Include any other relevant user data
-            }
+                    "access_token": auth_response.session.access_token,
+                    "refresh_token": auth_response.session.refresh_token,
+                    "user": {
+                        "id": auth_response.user.id,
+                        "email": auth_response.user.email,
+                        "username": auth_response.user.user_metadata.get("username")
+                    },
+                    # Include any other relevant user data
+                }
+            else:
+                raise HTTPException(status_code=400, detail="No session returned from Supabase. Login may have failed.")
         else:
             # Check for error message (Supabase v2 structure)
             error_message = getattr(auth_response, 'message', None) or "Login failed"
@@ -206,3 +215,10 @@ async def protected(payload: dict = Depends(verify_token)):
         "user_id": payload["sub"],
         "email": payload["email"]
     }
+
+@app.get("/api/app_projects_with_members")
+async def api_get_projects_with_members():
+    data = await get_projects_with_members()
+    if data is None:
+        raise HTTPException(status_code=500, detail="Failed to fetch projects with members")
+    return {"projects": data}
