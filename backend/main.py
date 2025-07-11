@@ -171,6 +171,15 @@ async def login(request: UserRegister):
         if "Invalid login credentials" in error_detail:
             error_detail = "Invalid email or password"
         raise HTTPException(status_code=400, detail=error_detail)
+    
+@app.post("/logout")
+async def logout():
+    try:
+        # Sign out user from Supabase
+        supabase.auth.sign_out()
+        return {"status": "success", "message": "User logged out successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e) or "Logout failed")
 
 @app.get("/api/protected")
 async def protected(payload: dict = Depends(verify_token)):

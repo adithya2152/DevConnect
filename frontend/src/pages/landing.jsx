@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Code, Group, RocketLaunch, Chat } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
+import NavBar from '../components/nav';
 
 const features = [
   {
@@ -50,47 +50,7 @@ export default function DevConnectLandingPage() {
       }}
     >
       {/* Navigation */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          background: 'rgba(18, 18, 18, 0.9)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          py: 2,
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h5" fontWeight="bold">
-              DevConnect
-            </Typography>
-            <Stack direction="row" spacing={2}>
-              <Button
-                onClick={() => navigate('/projects')}
-                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
-              >
-                Projects
-              </Button>
-              <Button
-                onClick={() => navigate('/chat')}
-                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
-              >
-                Chat
-              </Button>
-              <Button
-                onClick={() => navigate('/login')}
-                sx={{ color: 'white', '&:hover': { background: 'rgba(255,255,255,0.1)' } }}
-              >
-                Login
-              </Button>
-            </Stack>
-          </Box>
-        </Container>
-      </Box>
+      <NavBar />
 
       {/* HERO */}
       <Box
