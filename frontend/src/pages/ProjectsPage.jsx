@@ -365,7 +365,11 @@ function ProjectsPage() {
     setCreateError('');
     setCreateSuccess('');
     try {
+      // Convert empty string date fields to null
       const payload = { ...createForm, created_by: userId };
+      ['deadline', 'started_at', 'completed_at'].forEach(field => {
+        if (payload[field] === '') payload[field] = null;
+      });
       await createProject(payload);
       setCreateSuccess('Project created!');
       handleCreateClose();
@@ -1123,7 +1127,7 @@ function ProjectsPage() {
                       options={[]}
                       value={createForm.tech_stack}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, tech_stack: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
                       renderInput={(params) => <TextField {...params} label="Tech Stack" fullWidth placeholder="Enter tech stack..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
                     />
                   </Grid>
@@ -1134,7 +1138,7 @@ function ProjectsPage() {
                       options={[]}
                       value={createForm.programming_languages}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, programming_languages: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
                       renderInput={(params) => <TextField {...params} label="Programming Languages" fullWidth placeholder="Enter programming languages..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
                     />
                   </Grid>
@@ -1372,7 +1376,7 @@ function ProjectsPage() {
                       options={[]}
                       value={createForm.tags}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, tags: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
                       renderInput={(params) => <TextField {...params} label="Tags" fullWidth placeholder="Enter tags..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
                     />
                   </Grid>
