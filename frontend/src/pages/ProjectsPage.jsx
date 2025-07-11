@@ -214,14 +214,31 @@ function ProjectsPage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch projects from Supabase
+        // Try a simpler nested select for members
         const { data, error: supabaseError } = await supabase
           .from('app_projects')
-          .select('*');
-        if (supabaseError) throw supabaseError;
-        setProjects(data || []);
+          .select('*, app_project_members(*, profiles(*))');
+        if (supabaseError) {
+          console.error('Supabase error:', supabaseError);
+          throw supabaseError;
+        }
+        // Map members to a flat array of profile info for each project
+        const projectsWithMembers = (data || []).map(project => ({
+          ...project,
+          members: (project.app_project_members || []).map(m => ({
+            id: m.profiles?.id,
+            name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+            avatar: m.profiles?.avatar || '',
+            email: m.profiles?.email || '',
+            role: m.role,
+            status: m.status,
+          }))
+        }));
+        setProjects(projectsWithMembers);
       } catch (err) {
         setError('Failed to fetch projects');
+        // Log the error for debugging
+        console.error('Failed to fetch projects:', err);
       } finally {
         setLoading(false);
       }
@@ -648,12 +665,15 @@ function ProjectsPage() {
                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                         <AvatarGroup max={4}>
                           {project.members && project.members.map((member) => (
-                            <Avatar
-                              key={member.id}
-                              alt={member.name}
-                              src={member.avatar}
-                              sx={{ width: 32, height: 32, border: '2px solid #374151' }}
-                            />
+                            <Tooltip key={member.id} title={member.email} placement="top">
+                              <Avatar
+                                alt={member.name}
+                                src={member.avatar}
+                                sx={{ width: 32, height: 32, border: '2px solid #374151' }}
+                              >
+                                {(!member.avatar && member.name) ? member.name[0] : ''}
+                              </Avatar>
+                            </Tooltip>
                           ))}
                         </AvatarGroup>
                         <Typography variant="caption" color="#9ca3af">
