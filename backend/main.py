@@ -8,8 +8,9 @@ from dotenv import load_dotenv
 from fastapi import UploadFile, File, Form
 from typing import Optional
 from fastapi import Depends
-from auth import verify_token
- 
+from auth.auth import verify_token
+from chat.chat_routes import chat_app
+from search.searchRoute import sea
 
 
 
@@ -36,6 +37,8 @@ supabase = create_client(
     supabase_url,
     supabase_key
 )
+
+app.mount("/chat", chat_app)
 
 
 # Temporary storage (replace with database in production)

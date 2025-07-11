@@ -1,4 +1,3 @@
-// src/pages/ChatPage.jsx
 import {
   Box,
   Avatar,
@@ -14,24 +13,57 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import SendIcon from "@mui/icons-material/Send";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "../components/nav";
-
-const messagesMock = [
-  { id: 1, sender: "Alice", message: "Hey there!", time: "10:30 AM" },
-  { id: 2, sender: "Me", message: "Hi! How are you?", time: "10:32 AM" },
-  { id: 3, sender: "Alice", message: "Doing great. React stuff!", time: "10:33 AM" },
-];
-
-const usersMock = ["Alice", "Bob", "Charlie"];
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
+import useAuthGuard from "../hooks/useAuthGuarf";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState(messagesMock);
-  const [newMessage, setNewMessage] = useState("");
+  useAuthGuard();
+
+  const [conversations, setConversations] = useState([]);
   const [search, setSearch] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [selectedDev , setSelectedDev] = useState(null);
+
+
+  useEffect(() => {
+    const fetchConv = async () => {
+      try {
+        const res = await axios.get("http://localhost:8000/chat/conversations", {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+          validateStatus: () => true,
+        });
+
+        if (res.status === 200) {
+          setConversations(res.data.conversations || []);
+          setStatusMessage("");
+        } else if (res.status === 204) {
+          setConversations([]);
+          setStatusMessage("No conversations yet. Start a new one!");
+        } else {
+          setStatusMessage("Unexpected error. Please try again later.");
+          toast.error(`Unexpected status: ${res.status}`);
+        }
+      } catch (error) {
+        console.error(error);
+        setStatusMessage("Failed to fetch conversations.");
+        toast.error("❌ Could not fetch conversations");
+      }
+    };
+
+    fetchConv();
+  }, []);
 
   const handleSend = () => {
     if (!newMessage.trim()) return;
+    
     setMessages([
       ...messages,
       { id: Date.now(), sender: "Me", message: newMessage, time: "Now" },
@@ -77,11 +109,32 @@ export default function ChatPage() {
             sx={{ mb: 2 }}
           />
 
+          {/* 🔔 Top Status Message */}
+          {statusMessage && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#9CA3AF",
+                backgroundColor: "#1f2937",
+                border: "1px dashed #4b5563",
+                p: 1,
+                mb: 2,
+                borderRadius: 2,
+                textAlign: "center",
+              }}
+            >
+              {statusMessage}
+            </Typography>
+          )}
+
           <Box sx={{ overflowY: "auto", flex: 1 }}>
             <List disablePadding>
-              {usersMock
-                .filter((user) => user.toLowerCase().includes(search.toLowerCase()))
-                .map((user, i) => (
+              {conversations
+                .filter((conv) =>
+                  conv?.room_id?.toLowerCase().includes(search.toLowerCase()) ||
+                  conv?.last_message?.content?.toLowerCase().includes(search.toLowerCase())
+                )
+                .map((conv, i) => (
                   <ListItem
                     key={i}
                     sx={{
@@ -93,16 +146,26 @@ export default function ChatPage() {
                     }}
                   >
                     <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: "#6366f1" }}>{user[0]}</Avatar>
+                      <Avatar sx={{ bgcolor: "#6366f1" }}>
+                        {conv.last_message?.sender_id?.[0] || "U"}
+                      </Avatar>
                     </ListItemAvatar>
-                    <ListItemText primary={user} secondary="Last message..." />
+                    <ListItemText
+                      primary={`Room ${conv.room_id.slice(0, 6)}...`}
+                      secondary={
+                        conv.last_message?.content
+                          ? conv.last_message.content
+                          : "No messages yet"
+                      }
+                    />
                   </ListItem>
                 ))}
             </List>
           </Box>
         </Box>
 
-        {/* Chat window */}
+        {/* Chat Window */}
+        {selectedDev?(
         <Box
           sx={{
             flex: 1,
@@ -114,7 +177,7 @@ export default function ChatPage() {
             position: "relative",
           }}
         >
-          {/* Chat header */}
+          {/* Header */}
           <Box
             sx={{
               p: 2,
@@ -125,9 +188,9 @@ export default function ChatPage() {
               backgroundColor: "rgba(17, 24, 39, 0.5)",
             }}
           >
-            <Avatar sx={{ bgcolor: "#6366f1", mr: 2 }}>A</Avatar>
+            <Avatar sx={{ bgcolor: "#6366f1", mr: 2 }}>{selectedDev?.name[0]}</Avatar>
             <Typography variant="h6" fontWeight="bold">
-              Alice
+              {selectedDev?.name}
             </Typography>
           </Box>
 
@@ -205,7 +268,22 @@ export default function ChatPage() {
             </IconButton>
           </Paper>
         </Box>
+        ) : (
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h4" align="center" color="white">Welcome to DevConnect , the place to connect with developers through private chats</Typography>
+            <Typography variant="h4" align="center" color="white">Select a dev to chat with</Typography>
+          </Box>
+        )}
       </Box>
+      <Toaster />
     </>
   );
 }
