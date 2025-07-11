@@ -116,6 +116,16 @@ async def register(
         if hasattr(auth_response, 'user') and auth_response.user:
             print("User registered successfully:", auth_response.user)
             print("auth Response:", auth_response.session)
+
+            # insert user into profiles table
+            user_data = {
+                "id": auth_response.user.id,    
+                "email": auth_response.user.email,
+                "username": auth_response.user.user_metadata.get("username", username),
+                "full_name": auth_response.user.user_metadata.get("username", username),  
+            }
+            supabase.table("profiles").insert(user_data).execute()
+            print("User data inserted into profiles table:", user_data)
             return {
                 "status": "success",
                 "access_token": auth_response.session.access_token ,
@@ -148,6 +158,9 @@ async def login(request: UserRegister):
         })
         # Check if login was successful
         if hasattr(auth_response, 'user') and auth_response.user:
+            #insert ot profiles table 
+
+            
             return {
                 "status": "success",
                 "user_id": auth_response.user.id,

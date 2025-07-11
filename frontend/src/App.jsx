@@ -6,6 +6,7 @@ import Login from './pages/auth/login';
 import ChatPage from './pages/ChatPage';
 import Dashboard from './pages/dashboard';
 import './App.css';
+import CommunitiesPage from './pages/community';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/community" element={<CommunitiesPage />} />
       </Routes>
     </Router>
   );

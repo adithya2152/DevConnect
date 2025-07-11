@@ -79,7 +79,7 @@ export default function NavBar() {
             <Button color="inherit" component={RouterLink} to="/projects">
               Projects
             </Button>
-            <Button color="inherit" component={RouterLink} to="/communities">
+            <Button color="inherit" component={RouterLink} to="/community">
               Communities
             </Button>
 
