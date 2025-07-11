@@ -46,6 +46,8 @@ import {
   X
 } from 'lucide-react';
 import NavBar from '../components/nav';
+import axios from 'axios';
+import { supabase } from '../api/supabase';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -191,180 +193,6 @@ const DifficultyChip = styled(Chip)(({ theme, difficulty }) => {
   };
 });
 
-// Mock data (same as before)
-const mockProjects = [
-  {
-    id: 1,
-    title: "E-commerce Platform with AI Recommendations",
-    description: "Building a modern e-commerce platform with AI-powered product recommendations and real-time analytics dashboard.",
-    detailed_description: "A comprehensive e-commerce solution featuring machine learning algorithms for personalized recommendations, real-time inventory management, and advanced analytics. Looking for passionate developers to join our team.",
-    status: "active",
-    project_type: "web",
-    domain: "fullstack",
-    difficulty_level: "intermediate",
-    required_skills: ["React", "Node.js", "Python", "PostgreSQL", "Machine Learning"],
-    tech_stack: ["React", "Node.js", "Express", "PostgreSQL", "TensorFlow", "AWS"],
-    programming_languages: ["JavaScript", "Python", "SQL"],
-    estimated_duration: "4 months",
-    team_size_min: 3,
-    team_size_max: 6,
-    is_remote: true,
-    timezone_preference: "UTC-5 to UTC+3",
-    github_url: "https://github.com/example/ecommerce-ai",
-    demo_url: "https://demo.ecommerce-ai.com",
-    image_url: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=250&fit=crop",
-    is_recruiting: true,
-    tags: ["E-commerce", "AI", "Full Stack", "Startup"],
-    view_count: 247,
-    like_count: 23,
-    application_count: 8,
-    created_at: "2024-12-15",
-    deadline: "2025-02-28",
-    members: [
-      { id: 1, name: "Alex Chen", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face", role: "owner" },
-      { id: 2, name: "Maria Rodriguez", avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face", role: "member" },
-      { id: 3, name: "David Kim", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face", role: "member" }
-    ]
-  },
-  {
-    id: 2,
-    title: "Mobile Fitness Tracker with Social Features",
-    description: "React Native app for fitness tracking with social challenges and community features.",
-    detailed_description: "A comprehensive fitness tracking application with social networking capabilities, workout challenges, and progress sharing features.",
-    status: "active",
-    project_type: "mobile",
-    domain: "mobile",
-    difficulty_level: "intermediate",
-    required_skills: ["React Native", "Firebase", "UI/UX Design", "REST APIs"],
-    tech_stack: ["React Native", "Firebase", "Redux", "Expo"],
-    programming_languages: ["JavaScript", "TypeScript"],
-    estimated_duration: "3 months",
-    team_size_min: 2,
-    team_size_max: 4,
-    is_remote: true,
-    timezone_preference: "UTC-8 to UTC+2",
-    github_url: "https://github.com/example/fitness-tracker",
-    image_url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop",
-    is_recruiting: true,
-    tags: ["Mobile", "Fitness", "Social", "React Native"],
-    view_count: 189,
-    like_count: 34,
-    application_count: 12,
-    created_at: "2024-12-10",
-    deadline: "2025-03-15",
-    members: [
-      { id: 4, name: "Sarah Johnson", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face", role: "owner" },
-      { id: 5, name: "Mike Wilson", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face", role: "member" }
-    ]
-  },
-  {
-    id: 3,
-    title: "Blockchain Voting System",
-    description: "Secure and transparent voting system using blockchain technology for democratic processes.",
-    detailed_description: "A decentralized voting platform ensuring transparency, security, and immutability of votes using blockchain technology.",
-    status: "active",
-    project_type: "web",
-    domain: "blockchain",
-    difficulty_level: "advanced",
-    required_skills: ["Solidity", "Web3.js", "React", "Smart Contracts", "Cryptography"],
-    tech_stack: ["Ethereum", "Solidity", "React", "Web3.js", "IPFS"],
-    programming_languages: ["Solidity", "JavaScript"],
-    estimated_duration: "6 months",
-    team_size_min: 4,
-    team_size_max: 8,
-    is_remote: true,
-    timezone_preference: "UTC-12 to UTC+12",
-    github_url: "https://github.com/example/blockchain-voting",
-    image_url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&h=250&fit=crop",
-    is_recruiting: true,
-    tags: ["Blockchain", "Smart Contracts", "Democracy", "Security"],
-    view_count: 312,
-    like_count: 45,
-    application_count: 15,
-    created_at: "2024-12-05",
-    deadline: "2025-06-01",
-    members: [
-      { id: 6, name: "Emily Davis", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face", role: "owner" },
-      { id: 7, name: "James Brown", avatar: "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=40&h=40&fit=crop&crop=face", role: "member" },
-      { id: 8, name: "Lisa Wang", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face", role: "member" }
-    ]
-  },
-  {
-    id: 4,
-    title: "AI-Powered Code Review Tool",
-    description: "Machine learning tool that provides intelligent code review suggestions and detects potential bugs.",
-    detailed_description: "An AI-powered tool that analyzes code quality, suggests improvements, and detects potential security vulnerabilities and bugs.",
-    status: "completed",
-    project_type: "api",
-    domain: "ai_ml",
-    difficulty_level: "advanced",
-    required_skills: ["Python", "Machine Learning", "NLP", "Docker", "FastAPI"],
-    tech_stack: ["Python", "TensorFlow", "FastAPI", "Docker", "PostgreSQL"],
-    programming_languages: ["Python"],
-    estimated_duration: "5 months",
-    team_size_min: 3,
-    team_size_max: 5,
-    is_remote: true,
-    timezone_preference: "UTC-5 to UTC+5",
-    github_url: "https://github.com/example/ai-code-review",
-    demo_url: "https://ai-code-review.com",
-    image_url: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=250&fit=crop",
-    is_recruiting: false,
-    tags: ["AI", "Code Review", "Machine Learning", "Developer Tools"],
-    view_count: 428,
-    like_count: 67,
-    application_count: 22,
-    created_at: "2024-08-01",
-    deadline: "2024-12-31",
-    members: [
-      { id: 9, name: "Robert Taylor", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face", role: "owner" },
-      { id: 10, name: "Anna Martinez", avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face", role: "member" },
-      { id: 11, name: "Chris Lee", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face", role: "member" }
-    ]
-  },
-  {
-    id: 5,
-    title: "Open Source Portfolio Builder",
-    description: "A web app for developers to create and showcase their portfolios with GitHub integration.",
-    detailed_description: "This project helps developers easily build and customize their own portfolio websites, with live GitHub stats, project showcases, and blogging features. Looking for frontend and backend contributors.",
-    status: "active",
-    project_type: "web",
-    domain: "frontend",
-    difficulty_level: "beginner",
-    required_skills: ["React", "CSS", "Node.js", "Express"],
-    tech_stack: ["React", "Node.js", "Express", "MongoDB"],
-    programming_languages: ["JavaScript", "CSS"],
-    estimated_duration: "2 months",
-    team_size_min: 2,
-    team_size_max: 5,
-    is_remote: true,
-    timezone_preference: "UTC-3 to UTC+5",
-    github_url: "https://github.com/example/portfolio-builder",
-    demo_url: "https://portfolio-builder-demo.com",
-    image_url: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop",
-    is_recruiting: true,
-    tags: ["Portfolio", "Open Source", "Web App", "Developer Tools"],
-    view_count: 102,
-    like_count: 12,
-    application_count: 4,
-    created_at: "2024-12-20",
-    deadline: "2025-03-01",
-    members: [
-      { id: 12, name: "Priya Singh", avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=40&h=40&fit=crop&crop=face", role: "owner" },
-      { id: 13, name: "John Doe", avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=40&h=40&fit=crop&crop=face", role: "member" }
-    ]
-  },
-];
-
-// Add a mock currentUser definition to avoid reference errors
-const currentUser = { id: 1, name: "Alex Chen" };
-
-// Extract unique values for filters
-const allDomains = [...new Set(mockProjects.map(p => p.domain))];
-const allStatuses = [...new Set(mockProjects.map(p => p.status))];
-const allTypes = [...new Set(mockProjects.map(p => p.project_type))];
-const allSkills = [...new Set(mockProjects.flatMap(p => p.required_skills))];
-
 function ProjectsPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -373,7 +201,65 @@ function ProjectsPage() {
   const [selectedType, setSelectedType] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [projects, setProjects] = useState(mockProjects);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get logged-in user
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userId = user.id;
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch projects from Supabase
+        const { data, error: supabaseError } = await supabase
+          .from('app_projects')
+          .select('*');
+        if (supabaseError) throw supabaseError;
+        setProjects(data || []);
+      } catch (err) {
+        setError('Failed to fetch projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // Extract unique values for filters from real data
+  const allDomains = [...new Set(projects.map(p => p.domain).filter(Boolean))];
+  const allStatuses = [...new Set(projects.map(p => p.status).filter(Boolean))];
+  const allTypes = [...new Set(projects.map(p => p.project_type).filter(Boolean))];
+  const allSkills = [...new Set(projects.flatMap(p => p.required_skills || []))];
+
+  // Filter projects based on current tab and filters
+  const filteredProjects = projects.filter(project => {
+    // Tab filtering
+    if (selectedTab === 1) { // My Projects
+      if (project.created_by !== userId) return false;
+    } else if (selectedTab === 0) { // Discover
+      if (project.created_by === userId || project.is_recruiting === false) return false;
+    }
+    // Search filtering
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        (project.title && project.title.toLowerCase().includes(searchLower)) ||
+        (project.description && project.description.toLowerCase().includes(searchLower)) ||
+        (project.required_skills && project.required_skills.some(skill => skill.toLowerCase().includes(searchLower))) ||
+        (project.tags && project.tags.some(tag => tag.toLowerCase().includes(searchLower)));
+      if (!matchesSearch) return false;
+    }
+    // Filter by domain, status, type, skill
+    if (selectedDomain && project.domain !== selectedDomain) return false;
+    if (selectedStatus && project.status !== selectedStatus) return false;
+    if (selectedType && project.project_type !== selectedType) return false;
+    if (selectedSkill && !(project.required_skills || []).includes(selectedSkill)) return false;
+    return true;
+  });
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -384,38 +270,6 @@ function ProjectsPage() {
       default: return <Clock size={12} />;
     }
   };
-
-  // Filter projects based on current tab and filters
-  const filteredProjects = projects.filter(project => {
-    // Tab filtering
-    if (selectedTab === 1) { // My Projects
-      const isOwner = project.members.some(member => member.id === currentUser.id && member.role === 'owner');
-      const isMember = project.members.some(member => member.id === currentUser.id);
-      if (!isOwner && !isMember) return false;
-    } else if (selectedTab === 0) { // Discover
-      const isMember = project.members.some(member => member.id === currentUser.id);
-      if (isMember || !project.is_recruiting) return false;
-    }
-
-    // Search filtering
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        project.title.toLowerCase().includes(searchLower) ||
-        project.description.toLowerCase().includes(searchLower) ||
-        project.required_skills.some(skill => skill.toLowerCase().includes(searchLower)) ||
-        project.tags.some(tag => tag.toLowerCase().includes(searchLower));
-      if (!matchesSearch) return false;
-    }
-
-    // Filter by domain, status, type, skill
-    if (selectedDomain && project.domain !== selectedDomain) return false;
-    if (selectedStatus && project.status !== selectedStatus) return false;
-    if (selectedType && project.project_type !== selectedType) return false;
-    if (selectedSkill && !project.required_skills.includes(selectedSkill)) return false;
-
-    return true;
-  });
 
   return (
     <>
@@ -616,7 +470,9 @@ function ProjectsPage() {
 
           {/* Projects Grid */}
           <Grid container spacing={3} justifyContent="center">
-            {filteredProjects.length === 0 ? (
+            {loading && <Grid item xs={12}><Typography variant="h5" color="#9ca3af" textAlign="center">Loading projects...</Typography></Grid>}
+            {error && <Grid item xs={12}><Typography variant="h5" color="#ef4444" textAlign="center">{error}</Typography></Grid>}
+            {filteredProjects.length === 0 && !loading && !error ? (
               <Grid item xs={12}>
                 <FilterCard sx={{ textAlign: 'center', py: 8 }}>
                   <Search size={64} color="#9ca3af" style={{ margin: '0 auto 16px' }} />
@@ -718,7 +574,7 @@ function ProjectsPage() {
 
                       {/* Tags */}
                       <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                        {project.tags.slice(0, 3).map((tag, index) => (
+                        {project.tags && project.tags.slice(0, 3).map((tag, index) => (
                           <Chip
                             key={index}
                             label={tag}
@@ -730,7 +586,7 @@ function ProjectsPage() {
                             }}
                           />
                         ))}
-                        {project.tags.length > 3 && (
+                        {project.tags && project.tags.length > 3 && (
                           <Chip
                             label={`+${project.tags.length - 3}`}
                             size="small"
@@ -745,7 +601,7 @@ function ProjectsPage() {
 
                       {/* Skills */}
                       <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                        {project.required_skills.slice(0, 4).map((skill, index) => (
+                        {project.required_skills && project.required_skills.slice(0, 4).map((skill, index) => (
                           <Chip
                             key={index}
                             label={skill}
@@ -757,7 +613,7 @@ function ProjectsPage() {
                             }}
                           />
                         ))}
-                        {project.required_skills.length > 4 && (
+                        {project.required_skills && project.required_skills.length > 4 && (
                           <Chip
                             label={`+${project.required_skills.length - 4}`}
                             size="small"
@@ -791,7 +647,7 @@ function ProjectsPage() {
                       {/* Team Members */}
                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                         <AvatarGroup max={4}>
-                          {project.members.map((member) => (
+                          {project.members && project.members.map((member) => (
                             <Avatar
                               key={member.id}
                               alt={member.name}
@@ -801,7 +657,7 @@ function ProjectsPage() {
                           ))}
                         </AvatarGroup>
                         <Typography variant="caption" color="#9ca3af">
-                          {project.members.length} member{project.members.length !== 1 ? 's' : ''}
+                          {project.members && project.members.length} member{project.members && project.members.length !== 1 ? 's' : ''}
                         </Typography>
                       </Stack>
 
