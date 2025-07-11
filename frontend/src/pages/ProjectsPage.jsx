@@ -48,6 +48,7 @@ import {
 import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
+import useAuthGuard from '../hooks/useAuthGuarf';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -194,6 +195,7 @@ const DifficultyChip = styled(Chip)(({ theme, difficulty }) => {
 });
 
 function ProjectsPage() {
+  useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('');
