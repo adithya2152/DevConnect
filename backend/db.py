@@ -60,4 +60,16 @@ async def get_devs():
         print(f"Error fetching conversations: {e}")
         return None
     
+async def get_projects_with_members():
+    try:
+        response = (
+            supabase.table("app_projects")
+            .select("*, app_project_members(*, profiles(*))")
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching projects with members: {e}")
+        return None
+    
 # async def get_projects():

@@ -11,6 +11,7 @@ from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
 from search.searchRoute import search_app
+from db import get_projects_with_members
 
 
 
@@ -213,3 +214,10 @@ async def protected(payload: dict = Depends(verify_token)):
         "user_id": payload["sub"],
         "email": payload["email"]
     }
+
+@app.get("/api/app_projects_with_members")
+async def api_get_projects_with_members():
+    data = await get_projects_with_members()
+    if data is None:
+        raise HTTPException(status_code=500, detail="Failed to fetch projects with members")
+    return {"projects": data}

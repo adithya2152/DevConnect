@@ -47,7 +47,7 @@ import {
 } from 'lucide-react';
 import NavBar from '../components/nav';
 import axios from 'axios';
-import { supabase } from '../api/supabase';
+// import { supabase } from '../api/supabase';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -214,14 +214,9 @@ function ProjectsPage() {
       setLoading(true);
       setError(null);
       try {
-        // Try a simpler nested select for members
-        const { data, error: supabaseError } = await supabase
-          .from('app_projects')
-          .select('*, app_project_members(*, profiles(*))');
-        if (supabaseError) {
-          console.error('Supabase error:', supabaseError);
-          throw supabaseError;
-        }
+        // Fetch projects and their members from the backend API
+        const res = await axios.get('http://localhost:8000/api/app_projects_with_members');
+        const data = res.data.projects;
         // Map members to a flat array of profile info for each project
         const projectsWithMembers = (data || []).map(project => ({
           ...project,
@@ -237,7 +232,6 @@ function ProjectsPage() {
         setProjects(projectsWithMembers);
       } catch (err) {
         setError('Failed to fetch projects');
-        // Log the error for debugging
         console.error('Failed to fetch projects:', err);
       } finally {
         setLoading(false);
