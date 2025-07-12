@@ -44,7 +44,16 @@ export default function Communities() {
 
   const handleJoin = async (id) => {
     try {
-      await axios.post(`${BASE}/communities/${id}/joinReq`);
+     await axios.post(
+  `${BASE}/communities/join`,
+  {id},  
+  {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Content-Type': 'application/json'
+    }
+  }
+);
       toast.success("Joined!");
       setDialog({ open: false, community: null });
       // refresh lists if needed
@@ -272,7 +281,7 @@ case 3:
         <DialogActions>
           <Button onClick={() => setDialog({ open: false, community: null })}>Cancel</Button>
           <Button onClick={() => handleJoin(dialog.community.id)} autoFocus variant="contained">
-            Send Request
+            JOIN
           </Button>
         </DialogActions>
       </Dialog>

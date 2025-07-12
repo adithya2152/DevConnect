@@ -7,7 +7,8 @@ from db import (
     get_communities,
     get_joined_communities,
     get_comminities_by_userid,
-    add_community
+    add_community,
+    Join_community
 )
 
 community_app = FastAPI()
@@ -127,3 +128,60 @@ async def create_community(
             detail="Internal server error while creating community."
         )
         
+@community_app.post("/join")
+async def JoinCommunity(
+    community_id: str, 
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Join a community/room.
+    Returns:
+        - 200: Success (already member or newly joined)
+        - 404: Room doesn't exist
+        - 400: Bad request (join error)
+        - 500: Internal server error
+    """
+    try:
+        result = await Join_community(community_id, user_id)
+        
+        if result is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error while joining community"
+            )
+            
+        if "error" in result:
+            status_code = status.HTTP_400_BAD_REQUEST
+            if "Room does not exist" in result["error"]:
+                status_code = status.HTTP_404_NOT_FOUND
+            raise HTTPException(
+                status_code=status_code,
+                detail=result["error"]
+            )
+        
+        # Success response
+        response_data = {
+            "status": "success",
+            "room_id": community_id,
+            "user_id": user_id
+        }
+        
+        if "message" in result and "already" in result["message"]:
+            response_data["message"] = "Already a member"
+            response_data["is_existing"] = "True"
+        else:
+            response_data["message"] = "Successfully joined community"
+            response_data["is_existing"] = "False"
+            if "role" in result:
+                response_data["role"] = result["role"]
+        
+        return response_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Unexpected error joining community: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while joining community"
+        )

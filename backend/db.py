@@ -456,7 +456,6 @@ async def get_joined_communities(user_id: str):
         member_response = (
             supabase.table("room_members")
             .select("room_id")
-            .eq("type" , "group")
             .eq("user_id", user_id)
             .execute()
         )
@@ -496,4 +495,37 @@ async def add_community(room: dict):
         print(f"Error inserting community: {e}")
         return None
     
- 
+async def Join_community(room_id: str, user_id: str):
+    try:
+        
+        #checkl if room exists
+        
+        room = (supabase.table("rooms")
+                .select("*")
+                .eq("room_id" , room_id)
+                .execute()
+                )
+        
+        if not room.data:
+            return {"error":"Room does not exist"}
+        
+        #check if user is already a member of the room
+        
+        member = (supabase.table("room_members")
+                  .select("*")
+                  .eq("room_id" , room_id)
+                  .eq("user_id" , user_id)
+                  .execute()
+                  )
+        
+        if member.data:
+            return {"message":"User is already a member of the room"}
+        
+        #join the room
+        response = supabase.table("room_members").insert({"room_id":room_id , "user_id":user_id , "role":"member"}).execute()
+        if not response.data:
+            return {"error":"Error joining room"}
+        return response.data[0]
+    except Exception as e:
+        print(f"Error joining community: {e}")
+        return None
