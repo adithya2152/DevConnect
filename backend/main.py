@@ -221,7 +221,7 @@ async def protected(payload: dict = Depends(verify_token)):
     }
 
 @app.get("/api/app_projects_with_members")
-async def api_get_projects_with_members():
+async def api_get_projects_with_members(payload: dict = Depends(verify_token)):
     data = await get_projects_with_members()
     if data is None:
         raise HTTPException(status_code=500, detail="Failed to fetch projects with members")
@@ -253,7 +253,7 @@ class AppProjectCreate(BaseModel):
     is_recruiting: Optional[bool] = True
     is_public: Optional[bool] = True
     collaboration_type: Optional[str] = 'open'
-    created_by: str
+    created_by: Optional[str] = None  # Will be set automatically from authenticated user
     tags: Optional[list[str]] = None
     deadline: Optional[str] = None
     started_at: Optional[str] = None
@@ -261,14 +261,16 @@ class AppProjectCreate(BaseModel):
 
 class AppProjectMemberCreate(BaseModel):
     project_id: str
-    user_id: str
+    user_id: Optional[str] = None  # Will be set automatically from authenticated user
     role: Optional[str] = 'member'
     status: Optional[str] = 'pending'
     contribution_description: Optional[str] = None
 
 @app.post("/api/app_projects")
-async def create_app_project(project: AppProjectCreate):
+async def create_app_project(project: AppProjectCreate, payload: dict = Depends(verify_token)):
     project_data = project.dict()
+    # Set the created_by field to the authenticated user's ID
+    project_data['created_by'] = payload["sub"]
     created = insert_app_project(project_data)
     if created:
         return {"status": "success", "project": created}
@@ -276,9 +278,11 @@ async def create_app_project(project: AppProjectCreate):
         raise HTTPException(status_code=500, detail="Failed to create project")
 
 @app.post("/api/app_project_members")
-async def create_app_project_member(member: AppProjectMemberCreate):
+async def create_app_project_member(member: AppProjectMemberCreate, payload: dict = Depends(verify_token)):
     member_data = member.dict()
     member_data['status'] = 'pending'  # Always set to pending
+    # Set the user_id field to the authenticated user's ID
+    member_data['user_id'] = payload["sub"]
     created = insert_app_project_member(member_data)
     if created:
         return {"status": "success", "member": created}

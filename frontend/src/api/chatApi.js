@@ -376,7 +376,10 @@ export const searchUsers = async (query) => {
  * @returns {Promise<Object>} Created project
  */
 export const createProject = async (projectData) => {
-  const token = JSON.parse(localStorage.getItem('user') || '{}').access_token;
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
   const response = await fetch(`${API_BASE_URL}/app_projects`, {
     method: 'POST',
     headers: {
@@ -397,7 +400,10 @@ export const createProject = async (projectData) => {
  * @returns {Promise<Object>} Application result
  */
 export const applyToProject = async (memberData) => {
-  const token = JSON.parse(localStorage.getItem('user') || '{}').access_token;
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
   const response = await fetch(`${API_BASE_URL}/app_project_members`, {
     method: 'POST',
     headers: {

@@ -263,7 +263,17 @@ function ProjectsPage() {
       setError(null);
       try {
         // Fetch projects and their members from the backend API
-        const res = await axios.get('http://localhost:8000/api/app_projects_with_members');
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          setError('No authentication token found. Please log in.');
+          setLoading(false);
+          return;
+        }
+        const res = await axios.get('http://localhost:8000/api/app_projects_with_members', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = res.data.projects;
         // Map members to a flat array of profile info for each project
         const projectsWithMembers = (data || []).map(project => ({
@@ -375,7 +385,17 @@ function ProjectsPage() {
       handleCreateClose();
       // Refresh projects
       setLoading(true);
-      const res = await axios.get('http://localhost:8000/api/app_projects_with_members');
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('No authentication token found. Please log in.');
+        setLoading(false);
+        return;
+      }
+      const res = await axios.get('http://localhost:8000/api/app_projects_with_members', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = res.data.projects;
       const projectsWithMembers = (data || []).map(project => ({
         ...project,
