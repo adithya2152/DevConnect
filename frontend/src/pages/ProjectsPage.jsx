@@ -1082,7 +1082,7 @@ function ProjectsPage() {
                     mb: 1
                   }}
                 >
-                  Collaboration Space
+                  Projects Space
                 </Typography>
                 <Typography variant="body1" color="#9ca3af">
                   Discover, create, and join exciting developer projects
