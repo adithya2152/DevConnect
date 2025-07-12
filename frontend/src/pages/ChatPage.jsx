@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import ChatSidebar from '../components/chat/ChatSidebar';
 import ChatWindow from '../components/chat/ChatWindow';
 import CreateGroupModal from '../components/chat/CreateGroupModal';
-
+import InlineChatbox from '../components/chat/InlineChatbox';
 /**
  * ChatPage Component
  * Main chat page that combines sidebar and chat window
@@ -102,6 +102,7 @@ function ChatPage() {
         onClose={() => setCreateGroupOpen(false)}
         onCreateGroup={handleCreateGroup}
       />
+    <InlineChatbox/>
     </Box>
   );
 }

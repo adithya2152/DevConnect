@@ -15,7 +15,7 @@ import {
   Avatar,
   Stack
 } from '@mui/material';
-
+import InlineChatbox from '../components/chat/InlineChatbox';
 const allTags = Array.from(new Set(projects.flatMap(p => p.tags)));
 const allStatuses = Array.from(new Set(projects.map(p => p.status)));
 
@@ -282,6 +282,7 @@ function ProjectsPage() {
           <strong>Team Chatroom:</strong> Coming soon! Upon joining a project, a chatroom will be auto-generated for collaboration.
         </Paper>
       </Container>
+      <InlineChatbox/>
     </Box>
   );
 }

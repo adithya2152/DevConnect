@@ -99,7 +99,7 @@ export default function NavBar() {
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
-                  navigate("/profile");
+                  navigate("/my_profile");
                 }}
               >
                 Profile
