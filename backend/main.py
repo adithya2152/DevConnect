@@ -15,6 +15,7 @@ from chat_ws import ws_router
 from db import get_projects_with_members
 from db import get_projects_with_members, insert_app_project, insert_app_project_member
 from notification import notifrouter
+from community.community_routes import community_app
 
 
 
@@ -48,7 +49,7 @@ supabase = create_client(
 
 app.mount("/chat", chat_app)
 app.mount("/search", search_app)
-
+app.mount("/communities", community_app)
 app.include_router(ws_router)
 
 app.include_router(notifrouter)
