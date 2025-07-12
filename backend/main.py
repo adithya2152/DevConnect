@@ -17,6 +17,7 @@ from search.searchRoute import search_app
 from chat_ws import ws_router
 from db import get_projects_with_members, insert_app_project, insert_app_project_member
 from db import get_pending_applications_for_project, update_project_member_status, get_project_member, insert_notification, get_project_info
+from db import create_project_room, update_project_room_id, add_user_to_project_room, get_project_room, check_project_room_exists
 from notification import notifrouter
 from community.community_routes import community_app
 from extractintent import extract_intent  # Your async function to extract intent/domain
@@ -322,6 +323,72 @@ async def deny_project_application(member_id: str, payload: dict = Depends(verif
         insert_notification(notification_data)
         
         return {"status": "success", "message": "Application denied successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Create room for a project
+@app.post("/api/projects/{project_id}/create-room")
+async def create_project_room_endpoint(project_id: str, payload: dict = Depends(verify_token)):
+    try:
+        print(f"Creating room for project: {project_id}")
+        
+        # Get project info
+        project_info = get_project_info(project_id)
+        if not project_info:
+            print(f"Project not found: {project_id}")
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        print(f"Project info: {project_info}")
+        
+        # Verify the user is the project owner
+        if project_info['created_by'] != payload["sub"]:
+            print(f"User {payload['sub']} is not owner of project {project_id}")
+            raise HTTPException(status_code=403, detail="Only project owner can create room")
+        
+        # Check if room already exists
+        if check_project_room_exists(project_id):
+            print(f"Room already exists for project: {project_id}")
+            existing_room_id = get_project_room(project_id)
+            return {"status": "success", "room_id": existing_room_id, "message": "Room already exists"}
+        
+        # Create room for the project
+        room_id = create_project_room(project_info)
+        if not room_id:
+            print("Failed to create room")
+            raise HTTPException(status_code=500, detail="Failed to create project room")
+        
+        print(f"Created room: {room_id}")
+        
+        # Update project with room_id
+        update_result = update_project_room_id(project_id, room_id)
+        if not update_result:
+            print("Failed to update project with room_id")
+            # Don't fail the request, just log the issue
+        
+        return {"status": "success", "room_id": room_id, "message": "Project room created successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error creating project room: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add user to project room (when application is accepted)
+@app.post("/api/projects/{project_id}/add-to-room")
+async def add_user_to_project_room_endpoint(project_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Get project room
+        room_id = get_project_room(project_id)
+        if not room_id:
+            raise HTTPException(status_code=404, detail="Project room not found")
+        
+        # Add user to room
+        result = add_user_to_project_room(room_id, payload["sub"])
+        if not result:
+            raise HTTPException(status_code=500, detail="Failed to add user to project room")
+        
+        return {"status": "success", "message": "Added to project room successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

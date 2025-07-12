@@ -47,3 +47,6 @@ CREATE TABLE IF NOT EXISTS app_project_members (
   contribution_description text,
   UNIQUE(project_id, user_id)
 );
+
+-- Add room_id column to app_projects table to link projects with their community rooms
+  ALTER TABLE app_projects ADD COLUMN IF NOT EXISTS room_id uuid REFERENCES rooms(id) ON DELETE SET NULL;

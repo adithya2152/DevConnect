@@ -55,7 +55,7 @@ import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
 import useAuthGuard from '../hooks/useAuthGuarf';
-import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication } from '../api/chatApi';
+import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication, createProjectRoom, addUserToProjectRoom } from '../api/chatApi';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -232,6 +232,8 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
     setActionLoading(prev => ({ ...prev, [memberId]: true }));
     try {
       await acceptProjectApplication(memberId);
+      // Add user to project room
+      await addUserToProjectRoom(projectId);
       // Refresh applications
       await fetchApplications();
     } catch (err) {
@@ -610,6 +612,113 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
   );
 };
 
+// No Community Dialog Component
+const NoCommunityDialog = ({ open, onClose, projectTitle }) => {
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+        }
+      }}
+    >
+      <Box sx={{
+        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+        p: 3,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 80%, rgba(251, 191, 36, 0.3) 0%, transparent 50%)',
+          opacity: 0.6
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <Box sx={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            p: 2,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 2
+          }}>
+            <Users size={32} color="#ffffff" />
+          </Box>
+          <Typography variant="h5" sx={{ 
+            color: '#ffffff', 
+            fontWeight: 700,
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Community Not Created Yet
+          </Typography>
+        </Box>
+      </Box>
+
+      <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" color="#ffffff" sx={{ mb: 2, fontWeight: 600 }}>
+          "{projectTitle}" Community
+        </Typography>
+        <Typography variant="body1" color="#9ca3af" sx={{ mb: 3 }}>
+          The project owner hasn't created a community space yet. 
+          You'll be able to join the community once they set it up!
+        </Typography>
+        <Box sx={{
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          borderRadius: '12px',
+          p: 3,
+          mb: 3
+        }}>
+          <Typography variant="body2" color="#fbbf24" sx={{ fontWeight: 600 }}>
+            💡 Tip: You can contact the project owner to request them to create a community space for better collaboration!
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ 
+        p: 3, 
+        background: 'rgba(0, 0, 0, 0.2)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center'
+      }}>
+        <Button 
+          onClick={onClose}
+          sx={{ 
+            background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+            color: '#ffffff',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 4,
+            py: 1.5,
+            borderRadius: '12px',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
+              transform: 'translateY(-1px)',
+            }
+          }}
+        >
+          Got it!
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 function ProjectsPage() {
   useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -669,6 +778,15 @@ function ProjectsPage() {
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectTitle, setCurrentProjectTitle] = useState('');
 
+  // Community/Room State
+  const [roomLoading, setRoomLoading] = useState({});
+  const [acceptedProjects, setAcceptedProjects] = useState([]); // Track projects where user is accepted
+  const [projectsWithRooms, setProjectsWithRooms] = useState([]); // Track projects that have rooms created
+
+  // No Community Dialog State
+  const [noCommunityDialogOpen, setNoCommunityDialogOpen] = useState(false);
+  const [noCommunityProjectTitle, setNoCommunityProjectTitle] = useState('');
+
   // Get logged-in user
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
@@ -722,6 +840,12 @@ function ProjectsPage() {
     if (projects.length > 0 && userId) {
       const applied = projects.filter(p => (p.app_project_members || []).some(m => m.user_id === userId)).map(p => p.id);
       setAppliedProjects(applied);
+      
+      // Check which projects have rooms (for projects owned by current user)
+      const projectsWithRooms = projects
+        .filter(p => p.created_by === userId && p.room_id)
+        .map(p => p.id);
+      setProjectsWithRooms(projectsWithRooms);
     }
   }, [projects, userId]);
 
@@ -863,6 +987,76 @@ function ProjectsPage() {
     setCurrentProjectId(null);
     setCurrentProjectTitle('');
   };
+
+  const handleCloseNoCommunityDialog = () => {
+    setNoCommunityDialogOpen(false);
+    setNoCommunityProjectTitle('');
+  };
+
+  // Community/Room Handlers
+  const handleCreateCommunity = async (projectId) => {
+    // If room already exists, just navigate to community
+    if (projectsWithRooms.includes(projectId)) {
+      window.location.href = '/community';
+      return;
+    }
+    
+    // Prevent multiple clicks during creation
+    if (roomLoading[projectId]) {
+      return;
+    }
+    
+    setRoomLoading(prev => ({ ...prev, [projectId]: true }));
+    try {
+      const result = await createProjectRoom(projectId);
+      console.log('Room creation result:', result);
+      
+      // Add to projects with rooms
+      setProjectsWithRooms(prev => [...prev, projectId]);
+      
+      // Navigate to community page
+      window.location.href = '/community';
+    } catch (err) {
+      console.error('Error creating community:', err);
+      // Don't update state on error
+    } finally {
+      setRoomLoading(prev => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  const handleJoinCommunity = async (projectId) => {
+    // Check if project has a room
+    const project = projects.find(p => p.id === projectId);
+    if (!project || !project.room_id) {
+      // Show no community dialog
+      setNoCommunityProjectTitle(project?.title || 'Unknown Project');
+      setNoCommunityDialogOpen(true);
+      return;
+    }
+
+    setRoomLoading(prev => ({ ...prev, [projectId]: true }));
+    try {
+      await addUserToProjectRoom(projectId);
+      // Navigate to community page
+      window.location.href = '/community';
+    } catch (err) {
+      console.error('Error joining community:', err);
+    } finally {
+      setRoomLoading(prev => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  // Update accepted projects when applications are accepted
+  useEffect(() => {
+    if (projects.length > 0 && userId) {
+      const accepted = projects.filter(p => 
+        (p.app_project_members || []).some(m => 
+          m.user_id === userId && m.status === 'active'
+        )
+      ).map(p => p.id);
+      setAcceptedProjects(accepted);
+    }
+  }, [projects, userId]);
 
   return (
     <>
@@ -1260,18 +1454,55 @@ function ProjectsPage() {
                       {/* Action Buttons */}
                       <Stack direction="row" spacing={1}>
                         {selectedTab === 0 && (
-                          <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
-                            {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
-                          </GradientButton>
+                          <>
+                            {acceptedProjects.includes(project.id) ? (
+                              <GradientButton 
+                                fullWidth 
+                                onClick={() => handleJoinCommunity(project.id)}
+                                disabled={roomLoading[project.id]}
+                                startIcon={<MessageSquare size={16} />}
+                              >
+                                {roomLoading[project.id] ? 'Joining...' : 'Join Community'}
+                              </GradientButton>
+                            ) : (
+                              <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
+                                {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
+                              </GradientButton>
+                            )}
+                          </>
                         )}
                         {selectedTab === 1 && (
-                          <GradientButton 
-                            fullWidth 
-                            startIcon={<MessageSquare size={16} />} 
-                            onClick={() => handleOpenApplicationsModal(project.id, project.title)}
-                          >
-                            View Applications ({project.applications_count || 0})
-                          </GradientButton>
+                          <>
+                            <GradientButton 
+                              fullWidth 
+                              startIcon={<MessageSquare size={16} />} 
+                              onClick={() => handleOpenApplicationsModal(project.id, project.title)}
+                            >
+                              View Applications ({project.applications_count || 0})
+                            </GradientButton>
+                            <GradientButton 
+                              fullWidth 
+                              onClick={() => handleCreateCommunity(project.id)}
+                              disabled={roomLoading[project.id]}
+                              startIcon={<Users size={16} />}
+                              sx={{
+                                background: projectsWithRooms.includes(project.id) 
+                                  ? 'linear-gradient(90deg, #10b981, #059669)' 
+                                  : 'linear-gradient(90deg, #8b5cf6, #a855f7)',
+                                '&:hover': {
+                                  background: projectsWithRooms.includes(project.id)
+                                    ? 'linear-gradient(90deg, #059669, #10b981)'
+                                    : 'linear-gradient(90deg, #a855f7, #8b5cf6)',
+                                },
+                                '&:disabled': {
+                                  background: 'rgba(139, 92, 246, 0.3)',
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                }
+                              }}
+                            >
+                              {roomLoading[project.id] ? 'Creating...' : projectsWithRooms.includes(project.id) ? 'Go to Community' : 'Create Community'}
+                            </GradientButton>
+                          </>
                         )}
                         <IconButton>
                           <Eye size={16} />
@@ -1950,6 +2181,13 @@ function ProjectsPage() {
             onClose={handleCloseApplicationsModal}
             projectId={currentProjectId}
             projectTitle={currentProjectTitle}
+          />
+
+          {/* No Community Dialog */}
+          <NoCommunityDialog
+            open={noCommunityDialogOpen}
+            onClose={handleCloseNoCommunityDialog}
+            projectTitle={noCommunityProjectTitle}
           />
 
           {/* Coming Soon Notice */}

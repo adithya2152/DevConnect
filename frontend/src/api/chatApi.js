@@ -466,8 +466,8 @@ export const acceptProjectApplication = async (memberId) => {
 
 /**
  * Deny a project application
- * @param {string} memberId - The member ID
- * @returns {Promise<Object>} Success response
+ * @param {string} memberId - The member ID to deny
+ * @returns {Promise<Object>} Denial result
  */
 export const denyProjectApplication = async (memberId) => {
   const token = localStorage.getItem('access_token');
@@ -482,7 +482,53 @@ export const denyProjectApplication = async (memberId) => {
     }
   });
   if (!response.ok) {
-    throw new Error('Failed to deny application');
+    throw new Error('Failed to deny project application');
+  }
+  return await response.json();
+};
+
+/**
+ * Create a room for a project
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Room creation result
+ */
+export const createProjectRoom = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/create-room`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create project room');
+  }
+  return await response.json();
+};
+
+/**
+ * Add user to project room
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Add to room result
+ */
+export const addUserToProjectRoom = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/add-to-room`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add user to project room');
   }
   return await response.json();
 };

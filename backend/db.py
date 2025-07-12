@@ -617,7 +617,133 @@ def get_project_member(member_id: str):
     except Exception as e:
         print(f"Error fetching project member: {e}")
         return None   
-    
+
+# Create a room for a project
+def create_project_room(project_data: dict):
+    try:
+        print(f"Creating room for project: {project_data['title']}")
+        
+        # Debug room_members table structure
+        debug_room_members_structure()
+        
+        # Create room for the project
+        room_data = {
+            "name": project_data['title'],
+            "type": "group",
+            "created_by": project_data['created_by'],
+            "description": project_data['description']
+        }
+        
+        print(f"Room data: {room_data}")
+        
+        response = supabase.table("rooms").insert(room_data).execute()
+        print(f"Room creation response: {response}")
+        
+        if response.data:
+            room_id = response.data[0]['id']
+            print(f"Created room with ID: {room_id}")
+            
+            # Add project owner as admin member
+            member_data = {
+                "room_id": room_id,
+                "user_id": project_data['created_by'],
+                "role": "admin"
+                # Removed request_status as it might not exist in the table
+            }
+            
+            print(f"Adding member: {member_data}")
+            try:
+                member_response = supabase.table("room_members").insert(member_data).execute()
+                print(f"Member addition response: {member_response}")
+            except Exception as member_error:
+                print(f"Error adding member to room: {member_error}")
+                # Continue even if member addition fails
+                # The room was created successfully
+            
+            return room_id
+        else:
+            print("No data returned from room creation")
+            return None
+    except Exception as e:
+        print(f"Error creating project room: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+# Update project with room_id
+def update_project_room_id(project_id: str, room_id: str):
+    try:
+        response = (
+            supabase.table("app_projects")
+            .update({"room_id": room_id})
+            .eq("id", project_id)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error updating project room_id: {e}")
+        return None
+
+# Add user to project room
+def add_user_to_project_room(room_id: str, user_id: str):
+    try:
+        member_data = {
+            "room_id": room_id,
+            "user_id": user_id,
+            "role": "member"
+            # Removed request_status as it might not exist in the table
+        }
+        response = supabase.table("room_members").insert(member_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error adding user to project room: {e}")
+        return None
+
+# Get project room info
+def get_project_room(project_id: str):
+    try:
+        response = (
+            supabase.table("app_projects")
+            .select("room_id")
+            .eq("id", project_id)
+            .single()
+            .execute()
+        )
+        return response.data.get('room_id') if response.data else None
+    except Exception as e:
+        print(f"Error getting project room: {e}")
+        return None
+
+# Check if room exists for a project
+def check_project_room_exists(project_id: str):
+    try:
+        room_id = get_project_room(project_id)
+        if room_id:
+            # Verify the room actually exists
+            room_response = (
+                supabase.table("rooms")
+                .select("id")
+                .eq("id", room_id)
+                .single()
+                .execute()
+            )
+            return room_response.data is not None
+        return False
+    except Exception as e:
+        print(f"Error checking project room existence: {e}")
+        return False
+
+# Debug function to check room_members table structure
+def debug_room_members_structure():
+    try:
+        # Try to get a sample record to see the structure
+        response = supabase.table("room_members").select("*").limit(1).execute()
+        print(f"Room members table structure: {response.data}")
+        return True
+    except Exception as e:
+        print(f"Error checking room_members structure: {e}")
+        return False
+
 async def check_community_membership(community_id: str, user_id: str):
     # Check if user is member of community
     result = supabase.table("room_members") \
