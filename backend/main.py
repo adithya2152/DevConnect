@@ -11,8 +11,12 @@ from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
 from search.searchRoute import search_app
+<<<<<<< HEAD
 from chat_ws import ws_router
 from db import get_projects_with_members
+=======
+from db import get_projects_with_members, insert_app_project, insert_app_project_member
+>>>>>>> 314029131cd2d7aac07d898ea77b1edf9080ae36
 
 
 
@@ -225,3 +229,61 @@ async def api_get_projects_with_members():
     if data is None:
         raise HTTPException(status_code=500, detail="Failed to fetch projects with members")
     return {"projects": data}
+
+from fastapi import Request
+
+class AppProjectCreate(BaseModel):
+    title: str
+    description: str
+    detailed_description: Optional[str] = None
+    status: Optional[str] = 'active'
+    project_type: Optional[str] = None
+    domain: Optional[str] = None
+    difficulty_level: Optional[str] = 'intermediate'
+    required_skills: Optional[list[str]] = None
+    tech_stack: Optional[list[str]] = None
+    programming_languages: Optional[list[str]] = None
+    estimated_duration: Optional[str] = None
+    team_size_min: Optional[int] = 1
+    team_size_max: Optional[int] = 5
+    is_remote: Optional[bool] = True
+    timezone_preference: Optional[str] = None
+    github_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    figma_url: Optional[str] = None
+    documentation_url: Optional[str] = None
+    image_url: Optional[str] = None
+    is_recruiting: Optional[bool] = True
+    is_public: Optional[bool] = True
+    collaboration_type: Optional[str] = 'open'
+    created_by: str
+    tags: Optional[list[str]] = None
+    deadline: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+class AppProjectMemberCreate(BaseModel):
+    project_id: str
+    user_id: str
+    role: Optional[str] = 'member'
+    status: Optional[str] = 'pending'
+    contribution_description: Optional[str] = None
+
+@app.post("/api/app_projects")
+async def create_app_project(project: AppProjectCreate):
+    project_data = project.dict()
+    created = insert_app_project(project_data)
+    if created:
+        return {"status": "success", "project": created}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create project")
+
+@app.post("/api/app_project_members")
+async def create_app_project_member(member: AppProjectMemberCreate):
+    member_data = member.dict()
+    member_data['status'] = 'pending'  # Always set to pending
+    created = insert_app_project_member(member_data)
+    if created:
+        return {"status": "success", "member": created}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to apply to join project")

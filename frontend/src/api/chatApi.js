@@ -369,3 +369,45 @@ export const searchUsers = async (query) => {
     throw error;
   }
 };
+
+/**
+ * Create a new project
+ * @param {Object} projectData - Project creation data
+ * @returns {Promise<Object>} Created project
+ */
+export const createProject = async (projectData) => {
+  const token = JSON.parse(localStorage.getItem('user') || '{}').access_token;
+  const response = await fetch(`${API_BASE_URL}/app_projects`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(projectData)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create project');
+  }
+  return await response.json();
+};
+
+/**
+ * Apply to join a project
+ * @param {Object} memberData - { project_id, user_id, ... }
+ * @returns {Promise<Object>} Application result
+ */
+export const applyToProject = async (memberData) => {
+  const token = JSON.parse(localStorage.getItem('user') || '{}').access_token;
+  const response = await fetch(`${API_BASE_URL}/app_project_members`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(memberData)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to apply to join project');
+  }
+  return await response.json();
+};
