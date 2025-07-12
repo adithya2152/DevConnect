@@ -8,8 +8,12 @@ from dotenv import load_dotenv
 from fastapi import UploadFile, File, Form
 from typing import Optional
 from fastapi import Depends
-from auth import verify_token
- 
+from auth.auth import verify_token
+from chat.chat_routes import chat_app
+from search.searchRoute import search_app
+from chat_ws import ws_router
+from db import get_projects_with_members
+from db import get_projects_with_members, insert_app_project, insert_app_project_member
 
 
 
@@ -36,6 +40,11 @@ supabase = create_client(
     supabase_url,
     supabase_key
 )
+
+app.mount("/chat", chat_app)
+app.mount("/search", search_app)
+
+app.include_router(ws_router)
 
 
 # Temporary storage (replace with database in production)
@@ -116,16 +125,31 @@ async def register(
         if hasattr(auth_response, 'user') and auth_response.user:
             print("User registered successfully:", auth_response.user)
             print("auth Response:", auth_response.session)
-            return {
-                "status": "success",
-                "access_token": auth_response.session.access_token ,
-                "refresh_token": auth_response.session.refresh_token,
-                "user": {
-                    "id": auth_response.user.id,
-                    "email": auth_response.user.email,
-                    "username": auth_response.user.user_metadata.get("username")
-                }
+
+            # insert user into profiles table
+            user_data = {
+                "id": auth_response.user.id,    
+                "email": auth_response.user.email,
+                "username": auth_response.user.user_metadata.get("username", username),
+                "full_name": auth_response.user.user_metadata.get("username", username),  
             }
+            supabase.table("profiles").insert(user_data).execute()
+            print("User data inserted into profiles table:", user_data)
+
+            # Check if session exists before accessing tokens
+            if hasattr(auth_response, 'session') and auth_response.session is not None:
+                return {
+                    "status": "success",
+                    "access_token": auth_response.session.access_token ,
+                    "refresh_token": auth_response.session.refresh_token,
+                    "user": {
+                        "id": auth_response.user.id,
+                        "email": auth_response.user.email,
+                        "username": auth_response.user.user_metadata.get("username")
+                    }
+                }
+            else:
+                raise HTTPException(status_code=400, detail="No session returned from Supabase. Registration may have failed.")
         else:
             # Check for error message (Supabase v2 structure)
             error_message = getattr(auth_response, 'message', None) or "Registration failed"
@@ -148,19 +172,25 @@ async def login(request: UserRegister):
         })
         # Check if login was successful
         if hasattr(auth_response, 'user') and auth_response.user:
-            return {
-                "status": "success",
-                "user_id": auth_response.user.id,
-                "email": auth_response.user.email,
-                "access_token": auth_response.session.access_token,
-                "refresh_token": auth_response.session.refresh_token,
-                "user": {
-                    "id": auth_response.user.id,
+            #insert ot profiles table 
+
+            # Check if session exists before accessing tokens
+            if hasattr(auth_response, 'session') and auth_response.session is not None:
+                return {
+                    "status": "success",
+                    "user_id": auth_response.user.id,
                     "email": auth_response.user.email,
-                    "username": auth_response.user.user_metadata.get("username")
-                },
-                # Include any other relevant user data
-            }
+                    "access_token": auth_response.session.access_token,
+                    "refresh_token": auth_response.session.refresh_token,
+                    "user": {
+                        "id": auth_response.user.id,
+                        "email": auth_response.user.email,
+                        "username": auth_response.user.user_metadata.get("username")
+                    },
+                    # Include any other relevant user data
+                }
+            else:
+                raise HTTPException(status_code=400, detail="No session returned from Supabase. Login may have failed.")
         else:
             # Check for error message (Supabase v2 structure)
             error_message = getattr(auth_response, 'message', None) or "Login failed"
@@ -189,3 +219,72 @@ async def protected(payload: dict = Depends(verify_token)):
         "user_id": payload["sub"],
         "email": payload["email"]
     }
+
+@app.get("/api/app_projects_with_members")
+async def api_get_projects_with_members(payload: dict = Depends(verify_token)):
+    data = await get_projects_with_members()
+    if data is None:
+        raise HTTPException(status_code=500, detail="Failed to fetch projects with members")
+    return {"projects": data}
+
+from fastapi import Request
+
+class AppProjectCreate(BaseModel):
+    title: str
+    description: str
+    detailed_description: Optional[str] = None
+    status: Optional[str] = 'active'
+    project_type: Optional[str] = None
+    domain: Optional[str] = None
+    difficulty_level: Optional[str] = 'intermediate'
+    required_skills: Optional[list[str]] = None
+    tech_stack: Optional[list[str]] = None
+    programming_languages: Optional[list[str]] = None
+    estimated_duration: Optional[str] = None
+    team_size_min: Optional[int] = 1
+    team_size_max: Optional[int] = 5
+    is_remote: Optional[bool] = True
+    timezone_preference: Optional[str] = None
+    github_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    figma_url: Optional[str] = None
+    documentation_url: Optional[str] = None
+    image_url: Optional[str] = None
+    is_recruiting: Optional[bool] = True
+    is_public: Optional[bool] = True
+    collaboration_type: Optional[str] = 'open'
+    created_by: Optional[str] = None  # Will be set automatically from authenticated user
+    tags: Optional[list[str]] = None
+    deadline: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+class AppProjectMemberCreate(BaseModel):
+    project_id: str
+    user_id: Optional[str] = None  # Will be set automatically from authenticated user
+    role: Optional[str] = 'member'
+    status: Optional[str] = 'pending'
+    contribution_description: Optional[str] = None
+
+@app.post("/api/app_projects")
+async def create_app_project(project: AppProjectCreate, payload: dict = Depends(verify_token)):
+    project_data = project.dict()
+    # Set the created_by field to the authenticated user's ID
+    project_data['created_by'] = payload["sub"]
+    created = insert_app_project(project_data)
+    if created:
+        return {"status": "success", "project": created}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create project")
+
+@app.post("/api/app_project_members")
+async def create_app_project_member(member: AppProjectMemberCreate, payload: dict = Depends(verify_token)):
+    member_data = member.dict()
+    member_data['status'] = 'pending'  # Always set to pending
+    # Set the user_id field to the authenticated user's ID
+    member_data['user_id'] = payload["sub"]
+    created = insert_app_project_member(member_data)
+    if created:
+        return {"status": "success", "member": created}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to apply to join project")

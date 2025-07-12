@@ -5,8 +5,8 @@ import Register from './pages/auth/register';
 import Login from './pages/auth/login';
 import ChatPage from './pages/ChatPage';
 import Dashboard from './pages/dashboard';
-import Profile from  './pages/Profile'
 import './App.css';
+import CommunitiesPage from './pages/community';
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/my_profile" element={<Profile />} />
+        <Route path="/community" element={<CommunitiesPage />} />
       </Routes>
     </Router>
   );
