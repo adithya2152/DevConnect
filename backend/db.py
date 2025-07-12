@@ -495,3 +495,5 @@ async def add_community(room: dict):
     except Exception as e:
         print(f"Error inserting community: {e}")
         return None
+    
+ 
