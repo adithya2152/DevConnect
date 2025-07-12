@@ -16,6 +16,7 @@ from chat.chat_routes import chat_app
 from search.searchRoute import search_app
 from chat_ws import ws_router
 from db import get_projects_with_members, insert_app_project, insert_app_project_member
+from db import get_pending_applications_for_project, update_project_member_status, get_project_member, insert_notification, get_project_info
 from notification import notifrouter
 from extractintent import extract_intent  # Your async function to extract intent/domain
 from recom import find_people, find_projects  # Your async search functions
@@ -240,6 +241,88 @@ async def create_app_project_member(member: AppProjectMemberCreate, payload: dic
         return {"status": "success", "member": created}
     else:
         raise HTTPException(status_code=500, detail="Failed to apply to join project")
+
+# Get pending applications for a project
+@app.get("/api/projects/{project_id}/applications")
+async def get_project_applications(project_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Verify the user is the project owner
+        project_info = get_project_info(project_id)
+        if not project_info or project_info['created_by'] != payload["sub"]:
+            raise HTTPException(status_code=403, detail="Only project owner can view applications")
+        
+        applications = get_pending_applications_for_project(project_id)
+        return {"status": "success", "applications": applications}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Accept a project application
+@app.patch("/api/app_project_members/{member_id}/accept")
+async def accept_project_application(member_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Get the project member details
+        member_info = get_project_member(member_id)
+        if not member_info:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Verify the user is the project owner
+        project_info = get_project_info(member_info['project_id'])
+        if not project_info or project_info['created_by'] != payload["sub"]:
+            raise HTTPException(status_code=403, detail="Only project owner can accept applications")
+        
+        # Update the status to active
+        updated = update_project_member_status(member_id, "active")
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update application status")
+        
+        # Send notification to the applicant
+        notification_data = {
+            "type": "project_invite",
+            "reference_id": member_info['project_id'],
+            "message": f"Your application to join '{project_info['title']}' has been accepted!",
+            "is_read": False,
+            "recipient_id": member_info['user_id'],
+            "sender_id": payload["sub"]
+        }
+        insert_notification(notification_data)
+        
+        return {"status": "success", "message": "Application accepted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Deny a project application
+@app.patch("/api/app_project_members/{member_id}/deny")
+async def deny_project_application(member_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Get the project member details
+        member_info = get_project_member(member_id)
+        if not member_info:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Verify the user is the project owner
+        project_info = get_project_info(member_info['project_id'])
+        if not project_info or project_info['created_by'] != payload["sub"]:
+            raise HTTPException(status_code=403, detail="Only project owner can deny applications")
+        
+        # Update the status to rejected
+        updated = update_project_member_status(member_id, "rejected")
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update application status")
+        
+        # Send notification to the applicant
+        notification_data = {
+            "type": "project_invite",
+            "reference_id": member_info['project_id'],
+            "message": f"Your application to join '{project_info['title']}' has been denied.",
+            "is_read": False,
+            "recipient_id": member_info['user_id'],
+            "sender_id": payload["sub"]
+        }
+        insert_notification(notification_data)
+        
+        return {"status": "success", "message": "Application denied successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # -------- CHATBOT INTEGRATION ---------
 

@@ -417,3 +417,72 @@ export const applyToProject = async (memberData) => {
   }
   return await response.json();
 };
+
+/**
+ * Get pending applications for a project
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} List of pending applications
+ */
+export const getProjectApplications = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/applications`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch project applications');
+  }
+  return await response.json();
+};
+
+/**
+ * Accept a project application
+ * @param {string} memberId - The member ID
+ * @returns {Promise<Object>} Success response
+ */
+export const acceptProjectApplication = async (memberId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/app_project_members/${memberId}/accept`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to accept application');
+  }
+  return await response.json();
+};
+
+/**
+ * Deny a project application
+ * @param {string} memberId - The member ID
+ * @returns {Promise<Object>} Success response
+ */
+export const denyProjectApplication = async (memberId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/app_project_members/${memberId}/deny`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to deny application');
+  }
+  return await response.json();
+};
