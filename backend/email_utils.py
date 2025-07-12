@@ -30,9 +30,10 @@ def send_email(to_email: str, subject: str, body: str, html_body: Optional[str] 
         msg["Subject"] = subject
 
         # Attach both plain text and HTML versions
-        msg.attach(MIMEText(body, "plain"))
+        msg.attach(MIMEText(body, "plain", _charset="utf-8"))
         if html_body:
-            msg.attach(MIMEText(html_body, "html"))
+            msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
+
 
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
