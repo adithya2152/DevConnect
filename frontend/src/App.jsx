@@ -21,6 +21,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/community" element={<CommunitiesPage />} />
         <Route path="/my_profile" element={<Profile />} />
+        {/* <Route path="/my_profile" element={<Profile/>} /> */}
       </Routes>
     </Router>
   );
