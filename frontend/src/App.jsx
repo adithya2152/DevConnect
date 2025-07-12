@@ -7,7 +7,7 @@ import ChatPage from './pages/ChatPage';
 import Dashboard from './pages/dashboard';
 import './App.css';
 import CommunitiesPage from './pages/community';
-
+import Profile from './pages/Profile';
 function App() {
   return (
     <Router>
@@ -19,6 +19,7 @@ function App() {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/community" element={<CommunitiesPage />} />
+        <Route path="/my_profile" element={<Profile/>} />
       </Routes>
     </Router>
   );
