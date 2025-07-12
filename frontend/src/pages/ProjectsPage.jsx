@@ -255,100 +255,354 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: 24 }}>
-        Applications for "{projectTitle}"
-      </DialogTitle>
-      <DialogContent sx={{ p: 3 }}>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden',
+        }
+      }}
+    >
+      {/* Header with gradient background */}
+      <Box sx={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 3,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Background pattern */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%)',
+          opacity: 0.6
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box sx={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              p: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Users size={24} color="#ffffff" />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: '#ffffff', 
+              fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              Project Applications
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ 
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontWeight: 500
+          }}>
+            "{projectTitle}"
+          </Typography>
+        </Box>
+      </Box>
+
+      <DialogContent sx={{ 
+        p: 0,
+        background: 'rgba(0, 0, 0, 0.3)',
+        backdropFilter: 'blur(16px)',
+        minHeight: '400px'
+      }}>
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <CircularProgress size={60} sx={{ color: '#667eea' }} />
+            <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+              Loading Applications...
+            </Typography>
+            <Typography variant="body2" color="#9ca3af">
+              Fetching pending applications for your project
+            </Typography>
           </Box>
         ) : error ? (
-          <Typography color="error" variant="body1">
-            {error}
-          </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <Box sx={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              borderRadius: '50%',
+              p: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <X size={32} color="#ef4444" />
+            </Box>
+            <Typography variant="h6" color="#ef4444" sx={{ fontWeight: 600 }}>
+              Error Loading Applications
+            </Typography>
+            <Typography variant="body2" color="#9ca3af" sx={{ textAlign: 'center' }}>
+              {error}
+            </Typography>
+          </Box>
         ) : applications.length === 0 ? (
-          <Typography variant="body1" color="#9ca3af" sx={{ textAlign: 'center', py: 4 }}>
-            No pending applications
-          </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <Box sx={{
+              background: 'rgba(107, 114, 128, 0.2)',
+              borderRadius: '50%',
+              p: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Users size={48} color="#6b7280" />
+            </Box>
+            <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+              No Pending Applications
+            </Typography>
+            <Typography variant="body2" color="#9ca3af" sx={{ textAlign: 'center', maxWidth: 300 }}>
+              You don't have any pending applications for this project yet. 
+              Share your project to attract contributors!
+            </Typography>
+          </Box>
         ) : (
-          <Stack spacing={2}>
-            {applications.map((application) => (
-              <Paper
-                key={application.id}
-                sx={{
-                  p: 2,
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: 2,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar
-                      src={application.profiles?.avatar}
-                      sx={{ width: 48, height: 48 }}
-                    >
-                      {application.profiles?.full_name?.[0] || application.profiles?.username?.[0] || 'U'}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" color="#ffffff">
-                        {application.profiles?.full_name || application.profiles?.username || 'Unknown User'}
-                      </Typography>
-                      <Typography variant="body2" color="#9ca3af">
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" color="#ffffff" sx={{ 
+              mb: 3, 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Badge badgeContent={applications.length} color="primary" sx={{
+                '& .MuiBadge-badge': {
+                  background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                  color: '#ffffff',
+                  fontWeight: 600
+                }
+              }}>
+                <Users size={20} />
+              </Badge>
+              Pending Applications ({applications.length})
+            </Typography>
+            
+            <Stack spacing={3}>
+              {applications.map((application, index) => (
+                <Paper
+                  key={application.id}
+                  sx={{
+                    p: 3,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                      boxShadow: '0 8px 32px rgba(102, 126, 234, 0.2)',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    {/* Avatar Section */}
+                    <Box sx={{ position: 'relative' }}>
+                      <Avatar
+                        src={application.profiles?.avatar}
+                        sx={{ 
+                          width: 64, 
+                          height: 64,
+                          border: '3px solid rgba(102, 126, 234, 0.3)',
+                          boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)'
+                        }}
+                      >
+                        {application.profiles?.full_name?.[0] || application.profiles?.username?.[0] || 'U'}
+                      </Avatar>
+                      <Box sx={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -2,
+                        background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid rgba(0, 0, 0, 0.1)'
+                      }}>
+                        <Clock size={12} color="#ffffff" />
+                      </Box>
+                    </Box>
+
+                    {/* Content Section */}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                        <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+                          {application.profiles?.full_name || application.profiles?.username || 'Unknown User'}
+                        </Typography>
+                        <Chip 
+                          label="Pending" 
+                          size="small"
+                          sx={{
+                            background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                      
+                      <Typography variant="body2" color="#9ca3af" sx={{ mb: 2 }}>
                         {application.profiles?.email}
                       </Typography>
+                      
                       {application.contribution_description && (
-                        <Typography variant="body2" color="#9ca3af" sx={{ mt: 1 }}>
-                          "{application.contribution_description}"
-                        </Typography>
+                        <Box sx={{
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          border: '1px solid rgba(102, 126, 234, 0.2)',
+                          borderRadius: '12px',
+                          p: 2,
+                          mb: 2
+                        }}>
+                          <Typography variant="body2" color="#ffffff" sx={{ fontWeight: 500, mb: 0.5 }}>
+                            Contribution Description:
+                          </Typography>
+                          <Typography variant="body2" color="#9ca3af" sx={{ fontStyle: 'italic' }}>
+                            "{application.contribution_description}"
+                          </Typography>
+                        </Box>
                       )}
+
+                      {/* Action Buttons */}
+                      <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={() => handleAccept(application.id)}
+                          disabled={actionLoading[application.id]}
+                          startIcon={actionLoading[application.id] ? <CircularProgress size={16} /> : <CheckCircle size={16} />}
+                          sx={{
+                            background: 'linear-gradient(90deg, #10b981, #059669)',
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                            '&:hover': {
+                              background: 'linear-gradient(90deg, #059669, #10b981)',
+                              transform: 'translateY(-1px)',
+                              boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
+                            },
+                            '&:disabled': {
+                              background: 'rgba(16, 185, 129, 0.3)',
+                              transform: 'none',
+                            }
+                          }}
+                        >
+                          {actionLoading[application.id] ? 'Accepting...' : 'Accept'}
+                        </Button>
+                        
+                        <Button
+                          variant="outlined"
+                          size="medium"
+                          onClick={() => handleDeny(application.id)}
+                          disabled={actionLoading[application.id]}
+                          startIcon={actionLoading[application.id] ? <CircularProgress size={16} /> : <X size={16} />}
+                          sx={{
+                            borderColor: '#ef4444',
+                            color: '#ef4444',
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            '&:hover': {
+                              borderColor: '#dc2626',
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              transform: 'translateY(-1px)',
+                            },
+                            '&:disabled': {
+                              borderColor: 'rgba(239, 68, 68, 0.3)',
+                              color: 'rgba(239, 68, 68, 0.3)',
+                              transform: 'none',
+                            }
+                          }}
+                        >
+                          {actionLoading[application.id] ? 'Denying...' : 'Deny'}
+                        </Button>
+                      </Box>
                     </Box>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="small"
-                      onClick={() => handleAccept(application.id)}
-                      disabled={actionLoading[application.id]}
-                      sx={{
-                        background: 'linear-gradient(90deg, #10b981, #059669)',
-                        '&:hover': {
-                          background: 'linear-gradient(90deg, #059669, #10b981)',
-                        },
-                      }}
-                    >
-                      {actionLoading[application.id] ? 'Accepting...' : 'Accept'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => handleDeny(application.id)}
-                      disabled={actionLoading[application.id]}
-                      sx={{
-                        borderColor: '#ef4444',
-                        color: '#ef4444',
-                        '&:hover': {
-                          borderColor: '#dc2626',
-                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        },
-                      }}
-                    >
-                      {actionLoading[application.id] ? 'Denying...' : 'Deny'}
-                    </Button>
-                  </Box>
-                </Box>
-              </Paper>
-            ))}
-          </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} sx={{ color: '#9ca3af' }}>
+      
+      <DialogActions sx={{ 
+        p: 3, 
+        background: 'rgba(0, 0, 0, 0.2)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <Button 
+          onClick={onClose} 
+          sx={{ 
+            color: '#9ca3af',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            borderRadius: '12px',
+            '&:hover': {
+              backgroundColor: 'rgba(156, 163, 175, 0.1)',
+              color: '#ffffff'
+            }
+          }}
+        >
           Close
         </Button>
       </DialogActions>
