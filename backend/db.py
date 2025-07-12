@@ -573,3 +573,47 @@ async def Join_community(room_id: str, user_id: str):
     except Exception as e:
         print(f"Error joining community: {e}")
         return None
+    
+# Get pending applications for a project
+def get_pending_applications_for_project(project_id: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .select("*, profiles(*)")
+            .eq("project_id", project_id)
+            .eq("status", "pending")
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching pending applications: {e}")
+        return []
+
+# Update project member status
+def update_project_member_status(member_id: str, status: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .update({"status": status})
+            .eq("id", member_id)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error updating project member status: {e}")
+        return None
+
+# Get project member by ID
+def get_project_member(member_id: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .select("*, app_projects(*)")
+            .eq("id", member_id)
+            .single()
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching project member: {e}")
+        return None   
