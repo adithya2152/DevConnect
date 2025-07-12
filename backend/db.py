@@ -546,7 +546,7 @@ async def Join_community(room_id: str, user_id: str):
         
         room = (supabase.table("rooms")
                 .select("*")
-                .eq("room_id" , room_id)
+                .eq("id" , room_id)
                 .execute()
                 )
         
@@ -617,3 +617,38 @@ def get_project_member(member_id: str):
     except Exception as e:
         print(f"Error fetching project member: {e}")
         return None   
+    
+async def check_community_membership(community_id: str, user_id: str):
+    # Check if user is member of community
+    result = supabase.table("room_members") \
+                   .select("*") \
+                   .eq("room_id", community_id) \
+                   .eq("user_id", user_id) \
+                   .execute()
+    return len(result.data) > 0
+
+async def check_community_ownership(community_id: str, user_id: str):
+    # Check if user is owner of community
+    result = supabase.table("rooms") \
+                   .select("*") \
+                   .eq("id", community_id) \
+                   .eq("owner_id", user_id) \
+                   .execute()
+    return len(result.data) > 0
+
+async def get_community_messages(community_id: str):
+    # Get chat messages for community
+    result = supabase.table("messages") \
+                   .select("*") \
+                   .eq("room_id", community_id) \
+                   .order("created_at") \
+                   .execute()
+    return result.data
+
+async def get_community_members(community_id: str):
+    # Get all members of community
+    result = supabase.table("room_members") \
+                   .select("*, profiles(*)") \
+                   .eq("room_id", community_id) \
+                   .execute()
+    return result.data
