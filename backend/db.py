@@ -353,3 +353,60 @@ def insert_app_project_member(member_data: dict):
     except Exception as e:
         print(f"Error inserting project member: {e}")
         return None
+
+async def get_notifications(user_id: str):
+    try:
+        notif = (supabase.table("notification_with_sender")
+               .select("*")
+               .eq("recipient_id", user_id)
+               .order("created_at", desc=True)
+               .limit(20)
+               .execute())
+        
+        unread = (supabase.table("notifications")
+                .select("count", count="exact")
+                .eq("recipient_id", user_id)
+                .eq("is_read", False)
+                .execute())
+        
+        return {
+            "notifications": notif.data,
+            "unread_count": unread.count or 0
+        }
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return {"notifications": [], "unread_count": 0}
+    
+    
+async def get_unread_notifications(user_id: str):
+    """
+    Get all unread notifications for a specific user
+    Returns: List of notification dictionaries or empty list on error
+    """
+    try:
+        res = (supabase.table("notifications")
+               .select("*")
+               .eq("recipient_id", user_id)
+               .eq("is_read", False)
+               .execute()
+              )
+        return res.data
+    except Exception as e:
+        print(f"Error fetching unread notifications: {e}")
+        return []
+
+async def Update_notif(notif_id:str):
+    try:
+        res = (supabase.table("notifications")
+               .update({
+                   "is_read":True,
+                   "read_at":datetime.datetime.now().isoformat()
+               })
+               .eq("id",notif_id)
+               .execute()
+               )
+        
+        return res.data
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return []   

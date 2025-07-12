@@ -68,7 +68,7 @@ async def create_room(
     try:
         room = await create_private_room(user_id, request.other_user_id)
         
-        if not room:
+        if not room:    
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create room"

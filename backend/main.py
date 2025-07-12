@@ -14,7 +14,7 @@ from search.searchRoute import search_app
 from chat_ws import ws_router
 from db import get_projects_with_members
 from db import get_projects_with_members, insert_app_project, insert_app_project_member
-
+from notification import notifrouter
 
 
 
@@ -45,6 +45,8 @@ app.mount("/chat", chat_app)
 app.mount("/search", search_app)
 
 app.include_router(ws_router)
+
+app.include_router(notifrouter)
 
 
 # Temporary storage (replace with database in production)
