@@ -102,7 +102,12 @@ async def get_projects_with_members():
             .select("*, app_project_members(*, profiles(*))")
             .execute()
         )
-        return response.data
+        projects = response.data or []
+        # Add applications_count (pending) to each project
+        for project in projects:
+            members = project.get("app_project_members", [])
+            project["applications_count"] = sum(1 for m in members if m.get("status") == "pending")
+        return projects
     except Exception as e:
         print(f"Error fetching projects with members: {e}")
         return None
@@ -279,7 +284,7 @@ async def get_user_stats(user_id: str):
         # Get followers count
         followers = (
             supabase.table("user_connections")
-            .select("*", count="exact")
+            .select("*")
             .eq("following_id", user_id)
             .execute()
         )
@@ -287,7 +292,7 @@ async def get_user_stats(user_id: str):
         # Get following count
         following = (
             supabase.table("user_connections")
-            .select("*", count="exact")
+            .select("*")
             .eq("follower_id", user_id)
             .execute()
         )
@@ -295,7 +300,7 @@ async def get_user_stats(user_id: str):
         # Get projects count
         projects = (
             supabase.table("projects")
-            .select("*", count="exact")
+            .select("*")
             .eq("profile_id", user_id)
             .execute()
         )
@@ -348,10 +353,49 @@ def insert_app_project(project_data: dict):
 # Insert a new member into app_project_members
 def insert_app_project_member(member_data: dict):
     try:
+        # Insert the project member
         response = supabase.table("app_project_members").insert(member_data).execute()
-        return response.data[0] if response.data else None
+        member_result = response.data[0] if response.data else None
+        
+        if member_result:
+            # Get project information to find the owner
+            project_info = get_project_info(member_data['project_id'])
+            if project_info and project_info['created_by']:
+                # Create notification for project owner
+                notification_data = {
+                    "type": "project_invite",
+                    "reference_id": member_data['project_id'],
+                    "message": f"New application to join your project '{project_info['title']}'",
+                    "is_read": False,
+                    "recipient_id": project_info['created_by'],
+                    "sender_id": member_data['user_id']
+                }
+                
+                # Insert the notification
+                insert_notification(notification_data)
+                print(f"✅ Notification sent to project owner {project_info['created_by']}")
+        
+        return member_result
     except Exception as e:
         print(f"Error inserting project member: {e}")
+        return None
+
+# Get project information including owner
+def get_project_info(project_id: str):
+    try:
+        response = supabase.table("app_projects").select("*").eq("id", project_id).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error getting project info: {e}")
+        return None
+
+# Insert a new notification
+def insert_notification(notification_data: dict):
+    try:
+        response = supabase.table("notifications").insert(notification_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error inserting notification: {e}")
         return None
 
 async def get_notifications(user_id: str):
@@ -364,7 +408,7 @@ async def get_notifications(user_id: str):
                .execute())
         
         unread = (supabase.table("notifications")
-                .select("count", count="exact")
+                .select("count")
                 .eq("recipient_id", user_id)
                 .eq("is_read", False)
                 .execute())

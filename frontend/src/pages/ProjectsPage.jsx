@@ -28,7 +28,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import {
@@ -53,7 +55,7 @@ import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
 import useAuthGuard from '../hooks/useAuthGuarf';
-import { createProject, applyToProject } from '../api/chatApi';
+import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication } from '../api/chatApi';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -199,6 +201,161 @@ const DifficultyChip = styled(Chip)(({ theme, difficulty }) => {
   };
 });
 
+// Project Applications Modal Component
+const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) => {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [actionLoading, setActionLoading] = useState({});
+
+  useEffect(() => {
+    if (open && projectId) {
+      fetchApplications();
+    }
+  }, [open, projectId]);
+
+  const fetchApplications = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await getProjectApplications(projectId);
+      setApplications(response.applications || []);
+    } catch (err) {
+      setError('Failed to fetch applications');
+      console.error('Error fetching applications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAccept = async (memberId) => {
+    setActionLoading(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await acceptProjectApplication(memberId);
+      // Refresh applications
+      await fetchApplications();
+    } catch (err) {
+      console.error('Error accepting application:', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [memberId]: false }));
+    }
+  };
+
+  const handleDeny = async (memberId) => {
+    setActionLoading(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await denyProjectApplication(memberId);
+      // Refresh applications
+      await fetchApplications();
+    } catch (err) {
+      console.error('Error denying application:', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [memberId]: false }));
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: 24 }}>
+        Applications for "{projectTitle}"
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" variant="body1">
+            {error}
+          </Typography>
+        ) : applications.length === 0 ? (
+          <Typography variant="body1" color="#9ca3af" sx={{ textAlign: 'center', py: 4 }}>
+            No pending applications
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {applications.map((application) => (
+              <Paper
+                key={application.id}
+                sx={{
+                  p: 2,
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: 2,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      src={application.profiles?.avatar}
+                      sx={{ width: 48, height: 48 }}
+                    >
+                      {application.profiles?.full_name?.[0] || application.profiles?.username?.[0] || 'U'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" color="#ffffff">
+                        {application.profiles?.full_name || application.profiles?.username || 'Unknown User'}
+                      </Typography>
+                      <Typography variant="body2" color="#9ca3af">
+                        {application.profiles?.email}
+                      </Typography>
+                      {application.contribution_description && (
+                        <Typography variant="body2" color="#9ca3af" sx={{ mt: 1 }}>
+                          "{application.contribution_description}"
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      onClick={() => handleAccept(application.id)}
+                      disabled={actionLoading[application.id]}
+                      sx={{
+                        background: 'linear-gradient(90deg, #10b981, #059669)',
+                        '&:hover': {
+                          background: 'linear-gradient(90deg, #059669, #10b981)',
+                        },
+                      }}
+                    >
+                      {actionLoading[application.id] ? 'Accepting...' : 'Accept'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={() => handleDeny(application.id)}
+                      disabled={actionLoading[application.id]}
+                      sx={{
+                        borderColor: '#ef4444',
+                        color: '#ef4444',
+                        '&:hover': {
+                          borderColor: '#dc2626',
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        },
+                      }}
+                    >
+                      {actionLoading[application.id] ? 'Denying...' : 'Deny'}
+                    </Button>
+                  </Box>
+                </Box>
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ p: 3 }}>
+        <Button onClick={onClose} sx={{ color: '#9ca3af' }}>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 function ProjectsPage() {
   useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -253,6 +410,11 @@ function ProjectsPage() {
   const [applyError, setApplyError] = useState({}); // projectId: string
   const [appliedProjects, setAppliedProjects] = useState([]); // projectIds
 
+  // Project Applications Modal State
+  const [applicationsModalOpen, setApplicationsModalOpen] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectTitle, setCurrentProjectTitle] = useState('');
+
   // Get logged-in user
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
@@ -278,14 +440,17 @@ function ProjectsPage() {
         // Map members to a flat array of profile info for each project
         const projectsWithMembers = (data || []).map(project => ({
           ...project,
-          members: (project.app_project_members || []).map(m => ({
-            id: m.profiles?.id,
-            name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
-            avatar: m.profiles?.avatar || '',
-            email: m.profiles?.email || '',
-            role: m.role,
-            status: m.status,
-          }))
+          members: (project.app_project_members || [])
+            .filter(m => m.status === 'active')
+            .map(m => ({
+              id: m.profiles?.id,
+              name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+              avatar: m.profiles?.avatar || '',
+              email: m.profiles?.email || '',
+              role: m.role,
+              status: m.status,
+            })),
+          applications_count: project.applications_count,
         }));
         setProjects(projectsWithMembers);
       } catch (err) {
@@ -430,6 +595,19 @@ function ProjectsPage() {
     } finally {
       setApplyLoading(a => ({ ...a, [projectId]: false }));
     }
+  };
+
+  // Open Applications Modal Handler
+  const handleOpenApplicationsModal = (projectId, projectTitle) => {
+    setCurrentProjectId(projectId);
+    setCurrentProjectTitle(projectTitle);
+    setApplicationsModalOpen(true);
+  };
+
+  const handleCloseApplicationsModal = () => {
+    setApplicationsModalOpen(false);
+    setCurrentProjectId(null);
+    setCurrentProjectTitle('');
   };
 
   return (
@@ -833,8 +1011,12 @@ function ProjectsPage() {
                           </GradientButton>
                         )}
                         {selectedTab === 1 && (
-                          <GradientButton fullWidth startIcon={<MessageSquare size={16} />}>
-                            Open Chat
+                          <GradientButton 
+                            fullWidth 
+                            startIcon={<MessageSquare size={16} />} 
+                            onClick={() => handleOpenApplicationsModal(project.id, project.title)}
+                          >
+                            View Applications ({project.applications_count || 0})
                           </GradientButton>
                         )}
                         <IconButton>
@@ -1507,6 +1689,14 @@ function ProjectsPage() {
               </Box>
             </DialogContent>
           </Dialog>
+
+          {/* Project Applications Modal */}
+          <ProjectApplicationsModal
+            open={applicationsModalOpen}
+            onClose={handleCloseApplicationsModal}
+            projectId={currentProjectId}
+            projectTitle={currentProjectTitle}
+          />
 
           {/* Coming Soon Notice */}
           <FilterCard sx={{ mt: 8, textAlign: 'center' }}>
