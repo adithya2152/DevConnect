@@ -11,12 +11,9 @@ from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
 from search.searchRoute import search_app
-<<<<<<< HEAD
 from chat_ws import ws_router
 from db import get_projects_with_members
-=======
 from db import get_projects_with_members, insert_app_project, insert_app_project_member
->>>>>>> 314029131cd2d7aac07d898ea77b1edf9080ae36
 
 
 
