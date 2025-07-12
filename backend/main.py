@@ -11,6 +11,7 @@ from fastapi import Depends
 from auth.auth import verify_token
 from chat.chat_routes import chat_app
 from search.searchRoute import search_app
+from chat_ws import ws_router
 from db import get_projects_with_members
 
 
@@ -41,6 +42,8 @@ supabase = create_client(
 
 app.mount("/chat", chat_app)
 app.mount("/search", search_app)
+
+app.include_router(ws_router)
 
 
 # Temporary storage (replace with database in production)

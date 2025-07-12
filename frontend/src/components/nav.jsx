@@ -26,6 +26,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useAuthStatus } from "../hooks/useAuthStatus";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
+import ProfileModal from "./ProfileModal";
 
 const SearchResults = styled(Paper)(() => ({
   position: "absolute",
@@ -51,6 +52,7 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [Searchloading , setSearchLoading] = useState(false);
+  const [profileModal, setProfileModal] = useState({ open: false, userId: null });
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -92,16 +94,10 @@ export default function NavBar() {
 
   const handleSelect =(item) =>
   {
-    switch(item.type)
-    {
-      case "dev":
-        // navigate(`/devs/${item.id}`);
-        print(item)
-        break;
-      case "project":
-        // navigate(`/projects/${item.id}`);
-        print(item)
-        break;
+    if (item.type === "dev") {
+      setProfileModal({ open: true, userId: item.id });
+      setSearchQuery(""); // Clear search
+      setSearchResults([]);
     }
   }
   const debouncedSearch = debounce(async(query)=>
@@ -114,12 +110,12 @@ export default function NavBar() {
     try {
       
       setSearchLoading(true);
-      const[devRes ] = await Promise.all([
+      const[devRes , projectRes ] = await Promise.all([
         axios.get(`http://localhost:8000/search/devs?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}}),
-        // axios.get(`http://localhost:8000/search/projects?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}})
+        axios.get(`http://localhost:8000/search/projects?q=${query}` , {headers : {Authorization : `Bearer ${localStorage.getItem("access_token")}`}})
       ]);
-      // const combined = [...devRes.data.map((item)=>({type : "dev" , ...item})) , ...projectRes.data.map((item)=>({type : "project" , ...item}))];
-      const combined = [...devRes.data.map((item)=>({type : "dev" , ...item}))];
+      const combined = [...devRes.data.map((item)=>({type : "dev" , ...item})) , ...projectRes.data.map((item)=>({type : "project" , ...item}))];
+      // const combined = [...devRes.data.map((item)=>({type : "dev" , ...item}))];
       setSearchResults(combined);
     } catch (error) {
       console.error("Search error:", error);
@@ -130,6 +126,35 @@ export default function NavBar() {
       setSearchLoading(false);
     }
   })
+
+  const handleMessage = async (userId, userProfile) => {
+    try {
+      // Create or get existing room
+      const response = await axios.post(
+        'http://localhost:8000/chat/create-room',
+        { other_user_id: userId },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access_token')}`
+          }
+        }
+      );
+      
+      if (response.data.room) {
+        // Navigate to chat with the room
+        navigate('/chat', { 
+          state: { 
+            selectedRoom: response.data.room,
+            selectedUser: userProfile 
+          } 
+        });
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast.error('Failed to start conversation');
+    }
+  };
+
   if (loading) return null;
 
   return (
@@ -190,11 +215,11 @@ export default function NavBar() {
               >
                 <ListItemAvatar>
                   <Avatar sx={{ bgcolor: "#6366f1" }}>
-                    {item.username?.charAt(0)?.toUpperCase() || "U"}
+                    {item.username?.charAt(0)?.toUpperCase() || item.full_name?.charAt(0)?.toUpperCase() || "U"}
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={item.full_name || item.name || item.username || "Unnamed Developer"}
+                  primary={item.full_name || item.name || item.username || item.title || item.detailed_description ||  "Unnamed Developer / Project"}
                   secondary={item.type}
                 />
 
@@ -265,6 +290,13 @@ export default function NavBar() {
           </>
         )}
       </Toolbar>
+      
+      <ProfileModal
+        open={profileModal.open}
+        onClose={() => setProfileModal({ open: false, userId: null })}
+        userId={profileModal.userId}
+        onMessage={handleMessage}
+      />
     </AppBar>
   );
 }
