@@ -1034,7 +1034,7 @@ function ProjectsPage() {
   const handleCreateCommunity = async (projectId) => {
     // If room already exists, just navigate to community
     if (projectsWithRooms.includes(projectId)) {
-      window.location.href = '/community';
+      window.location.href = `/communities/chat/${projects.find(p => p.id === projectId)?.room_id}`;
       return;
     }
     
@@ -1050,9 +1050,7 @@ function ProjectsPage() {
       
       // Add to projects with rooms
       setProjectsWithRooms(prev => [...prev, projectId]);
-      
-      // Navigate to community page
-      window.location.href = '/community';
+      // DO NOT redirect here! The button will now show 'Go to Community'.
     } catch (err) {
       console.error('Error creating community:', err);
       // Don't update state on error
