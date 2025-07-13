@@ -804,47 +804,49 @@ function ProjectsPage() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch projects and their members from the backend API
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          setError('No authentication token found. Please log in.');
-          setLoading(false);
-          return;
-        }
-        const res = await axios.get(`${import.meta.env.VITE_API_KEY}/api/app_projects_with_members`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = res.data.projects;
-        // Map members to a flat array of profile info for each project
-        const projectsWithMembers = (data || []).map(project => ({
-          ...project,
-          members: (project.app_project_members || [])
-            .filter(m => m.status === 'active')
-            .map(m => ({
-            id: m.profiles?.id,
-            name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
-            avatar: m.profiles?.avatar || '',
-            email: m.profiles?.email || '',
-            role: m.role,
-            status: m.status,
-            })),
-          applications_count: project.applications_count,
-        }));
-        setProjects(projectsWithMembers);
-      } catch (err) {
-        setError('Failed to fetch projects');
-        console.error('Failed to fetch projects:', err);
-      } finally {
+  // Move fetchProjects to top-level so it can be called from anywhere
+  const fetchProjects = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch projects and their members from the backend API
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('No authentication token found. Please log in.');
         setLoading(false);
+        return;
       }
-    };
+      const res = await axios.get(`${import.meta.env.VITE_API_KEY}/api/app_projects_with_members`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = res.data.projects;
+      // Map members to a flat array of profile info for each project
+      const projectsWithMembers = (data || []).map(project => ({
+        ...project,
+        members: (project.app_project_members || [])
+          .filter(m => m.status === 'active')
+          .map(m => ({
+          id: m.profiles?.id,
+          name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+          avatar: m.profiles?.avatar || '',
+          email: m.profiles?.email || '',
+          role: m.role,
+          status: m.status,
+          })),
+        applications_count: project.applications_count,
+      }));
+      setProjects(projectsWithMembers);
+    } catch (err) {
+      setError('Failed to fetch projects');
+      console.error('Failed to fetch projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProjects();
   }, []);
 
@@ -1050,7 +1052,18 @@ function ProjectsPage() {
       
       // Add to projects with rooms
       setProjectsWithRooms(prev => [...prev, projectId]);
-      // DO NOT redirect here! The button will now show 'Go to Community'.
+
+      // Patch the project locally with the new room_id
+      if (result.room_id) {
+        setProjects(prevProjects =>
+          prevProjects.map(p =>
+            p.id === projectId ? { ...p, room_id: result.room_id } : p
+          )
+        );
+      }
+
+      // Optionally, you can still refetch for full consistency
+      // await fetchProjects();
     } catch (err) {
       console.error('Error creating community:', err);
       // Don't update state on error
