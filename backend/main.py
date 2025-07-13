@@ -38,6 +38,9 @@ app.add_middleware(
         "https://dev-connect-puce.vercel.app",
         "https://dev-connect-puce.vercel.app/login",
         "http://localhost:5173",
+        "http://localhost:5173/login",
+        "http://localhost:8000",
+        "http://localhost:8000/login"
     ],
     allow_credentials=True,
     allow_methods=["*"],    
@@ -64,17 +67,29 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# Explicit OPTIONS handler@app.options("/{path:path}")
+# Explicit OPTIONS handler
+@app.options("/{path:path}")
 async def preflight_handler(request: Request, path: str):
-    return Response(
-        status_code=204,
-        headers={
-            "Access-Control-Allow-Origin": "https://dev-connect-puce.vercel.app",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE, PUT",
-            "Access-Control-Allow-Headers": request.headers.get("Access-Control-Request-Headers", "*"),
-            "Access-Control-Max-Age": "86400"
-        }
-    )
+    origin = request.headers.get("Origin")
+    allowed_origins = [
+        "https://dev-connect-puce.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:8000"
+    ]
+    
+    # Check if origin is allowed
+    if origin in allowed_origins:
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE, PUT",
+                "Access-Control-Allow-Headers": request.headers.get("Access-Control-Request-Headers", "*"),
+                "Access-Control-Max-Age": "86400"
+            }
+        )
+    else:
+        return Response(status_code=400)
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -274,6 +289,14 @@ async def create_app_project(project: AppProjectCreate, payload: dict = Depends(
     
     created = insert_app_project(project_data)
     if created:
+        # Add the creator as an admin member
+        member_data = {
+            "project_id": created["id"],
+            "user_id": payload["sub"],
+            "role": "admin",
+            "status": "active"
+        }
+        insert_app_project_member(member_data)
         return {"status": "success", "project": created}
     else:
         raise HTTPException(status_code=500, detail="Failed to create project")
