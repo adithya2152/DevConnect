@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS app_projects (
   demo_url text,
   figma_url text,
   documentation_url text,
-  image_url text,
+  image_url text DEFAULT 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop',
   is_recruiting boolean DEFAULT true,
   is_public boolean DEFAULT true,
   collaboration_type text DEFAULT 'open' CHECK (collaboration_type IN ('open', 'invite_only', 'closed')),
@@ -47,3 +47,9 @@ CREATE TABLE IF NOT EXISTS app_project_members (
   contribution_description text,
   UNIQUE(project_id, user_id)
 );
+
+-- Add room_id column to app_projects table to link projects with their community rooms
+ALTER TABLE app_projects ADD COLUMN IF NOT EXISTS room_id uuid REFERENCES rooms(id) ON DELETE SET NULL;
+
+-- Set default value for image_url to the same Unsplash link
+ALTER TABLE app_projects ALTER COLUMN image_url SET DEFAULT 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop';

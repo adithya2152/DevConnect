@@ -70,9 +70,15 @@ export default function NavBar() {
 
   const fetchNotifications = useCallback(async () => {
     try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        console.log("No access token available, skipping notification fetch");
+        return;
+      }
+
       const res = await axios.get("http://localhost:8000/notifications", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (res.data.status !== "success") {
@@ -81,6 +87,10 @@ export default function NavBar() {
       setNotifications(res.data.notifications || []);
       setUnreadCount(res.data.unread_count || 0);
     } catch (error) {
+      if (error.response?.status === 401) {
+        console.log("Unauthorized - token may be invalid, skipping notification fetch");
+        return;
+      }
       console.error("Error fetching notifications:", error);
       toast.error("Failed to load notifications");
     }
@@ -89,10 +99,17 @@ export default function NavBar() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    fetchNotifications();
+    // Add a small delay to ensure authentication is properly set up
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 500);
+
     const interval = setInterval(fetchNotifications, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [isAuthenticated, fetchNotifications]);
 
   const markAllAsRead = async () => {
@@ -371,7 +388,19 @@ export default function NavBar() {
               onClick={handleNotificationOpen}
               sx={{ ml: 1 }}
             >
-              <Badge badgeContent={unreadCount} color="error" max={99}>
+              <Badge 
+                badgeContent={unreadCount > 0 ? "" : 0} 
+                color="error" 
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: unreadCount > 0 ? '#ef4444' : 'transparent',
+                    minWidth: unreadCount > 0 ? '8px' : '0px',
+                    height: unreadCount > 0 ? '8px' : '0px',
+                    borderRadius: '50%',
+                    border: unreadCount > 0 ? '2px solid #ffffff' : 'none',
+                  }
+                }}
+              >
                 <NotificationsIcon />
               </Badge>
             </IconButton>
@@ -425,7 +454,7 @@ export default function NavBar() {
                     {notifications.map((notification) => (
                       <ListItem
                         key={notification.id}
-                        button
+                        component="button"
                         onClick={() => handleNotificationClick(notification)}
                         sx={{
                           bgcolor: notification.is_read

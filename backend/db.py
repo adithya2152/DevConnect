@@ -2,6 +2,7 @@ import os
 from supabase import create_client , Client
 import logging
 import datetime
+from typing import List, Dict , Optional
 
 
 try:
@@ -102,7 +103,12 @@ async def get_projects_with_members():
             .select("*, app_project_members(*, profiles(*))")
             .execute()
         )
-        return response.data
+        projects = response.data or []
+        # Add applications_count (pending) to each project
+        for project in projects:
+            members = project.get("app_project_members", [])
+            project["applications_count"] = sum(1 for m in members if m.get("status") == "pending")
+        return projects
     except Exception as e:
         print(f"Error fetching projects with members: {e}")
         return None
@@ -279,7 +285,7 @@ async def get_user_stats(user_id: str):
         # Get followers count
         followers = (
             supabase.table("user_connections")
-            .select("*", count="exact")
+            .select("*")
             .eq("following_id", user_id)
             .execute()
         )
@@ -287,7 +293,7 @@ async def get_user_stats(user_id: str):
         # Get following count
         following = (
             supabase.table("user_connections")
-            .select("*", count="exact")
+            .select("*")
             .eq("follower_id", user_id)
             .execute()
         )
@@ -295,7 +301,7 @@ async def get_user_stats(user_id: str):
         # Get projects count
         projects = (
             supabase.table("projects")
-            .select("*", count="exact")
+            .select("*")
             .eq("profile_id", user_id)
             .execute()
         )
@@ -348,10 +354,49 @@ def insert_app_project(project_data: dict):
 # Insert a new member into app_project_members
 def insert_app_project_member(member_data: dict):
     try:
+        # Insert the project member
         response = supabase.table("app_project_members").insert(member_data).execute()
-        return response.data[0] if response.data else None
+        member_result = response.data[0] if response.data else None
+        
+        if member_result:
+            # Get project information to find the owner
+            project_info = get_project_info(member_data['project_id'])
+            if project_info and project_info['created_by']:
+                # Create notification for project owner
+                notification_data = {
+                    "type": "project_invite",
+                    "reference_id": member_data['project_id'],
+                    "message": f"New application to join your project '{project_info['title']}'",
+                    "is_read": False,
+                    "recipient_id": project_info['created_by'],
+                    "sender_id": member_data['user_id']
+                }
+                
+                # Insert the notification
+                insert_notification(notification_data)
+                print(f"✅ Notification sent to project owner {project_info['created_by']}")
+        
+        return member_result
     except Exception as e:
         print(f"Error inserting project member: {e}")
+        return None
+
+# Get project information including owner
+def get_project_info(project_id: str):
+    try:
+        response = supabase.table("app_projects").select("*").eq("id", project_id).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error getting project info: {e}")
+        return None
+
+# Insert a new notification
+def insert_notification(notification_data: dict):
+    try:
+        response = supabase.table("notifications").insert(notification_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error inserting notification: {e}")
         return None
 
 async def get_notifications(user_id: str):
@@ -364,14 +409,14 @@ async def get_notifications(user_id: str):
                .execute())
         
         unread = (supabase.table("notifications")
-                .select("count", count="exact")
+                .select("*")
                 .eq("recipient_id", user_id)
                 .eq("is_read", False)
                 .execute())
         
         return {
             "notifications": notif.data,
-            "unread_count": unread.count or 0
+            "unread_count": len(unread.data) if unread.data else 0
         }
     except Exception as e:
         print(f"Error fetching notifications: {e}")
@@ -410,3 +455,356 @@ async def Update_notif(notif_id:str):
     except Exception as e:
         print(f"Error fetching notifications: {e}")
         return []   
+    
+async def get_communities(user_id: str):
+    """
+    Get all public communities (both 'group' and 'private_group' types) 
+    that the user hasn't created
+    """
+    try:
+        response = (supabase.table("rooms")
+                    .select("*, room_members(count)", count="exact")
+                    .or_("type.eq.group,type.eq.private_group")  # Include both types
+                    .neq("created_by", user_id)
+                    .execute()
+                    )
+        
+        communities = []
+        for room in response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
+    except Exception as e:
+        print(f"Error fetching communities: {e}")
+        return []
+
+async def get_comminities_by_userid(userId: str):
+    """
+    Get all communities (both types) created by the user
+    """
+    try:
+        response = (supabase.table("rooms")
+                   .select("*, room_members(count)", count="exact")
+                   .or_("type.eq.group,type.eq.private_group")  # Include both types
+                   .eq("created_by", userId)
+                   .execute()
+                   )
+        
+        communities = []
+        for room in response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
+    except Exception as e:
+        print(f"Error fetching communities: {e}")
+        return []
+
+async def get_joined_communities(user_id: str):
+    """
+    Fetch all communities (both types) a user has joined
+    """
+    try:
+        # First get all room IDs the user is a member of
+        member_response = (
+            supabase.table("room_members")
+            .select("room_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        
+        if not member_response.data:
+            return []
+            
+        room_ids = [member["room_id"] for member in member_response.data]
+        
+        # Then fetch full details of those rooms with member counts
+        rooms_response = (
+            supabase.table("rooms")
+            .select("*, room_members(count)", count="exact")
+            .in_("id", room_ids)
+            .or_("type.eq.group,type.eq.private_group")  # Include both types
+            .execute()
+        )
+        
+        communities = []
+        for room in rooms_response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
+        
+    except Exception as e:
+        print(f"Error fetching joined communities: {str(e)}")
+        return []
+async def add_community(room: dict):
+    try:
+        response = supabase.table("rooms").insert({"name":room['name'] , "type": "group" , "description":room['description'] , "created_by":room['created_by']}).execute()
+        
+        member_data = {
+            "room_id":response.data[0]['id'],
+            "user_id":room['created_by'],
+            "role":"admin",
+        }
+        supabase.table("room_members").insert(member_data).execute()
+        
+        return response.data[0]
+    except Exception as e:
+        print(f"Error inserting community: {e}")
+        return None
+    
+async def Join_community(room_id: str, user_id: str):
+    try:
+        
+        #checkl if room exists
+        
+        room = (supabase.table("rooms")
+                .select("*")
+                .eq("id" , room_id)
+                .execute()
+                )
+        
+        if not room.data:
+            return {"error":"Room does not exist"}
+        
+        #check if user is already a member of the room
+        
+        member = (supabase.table("room_members")
+                  .select("*")
+                  .eq("room_id" , room_id)
+                  .eq("user_id" , user_id)
+                  .execute()
+                  )
+        
+        if member.data:
+            return {"message":"User is already a member of the room"}
+        
+        #join the room
+        response = supabase.table("room_members").insert({"room_id":room_id , "user_id":user_id , "role":"member"}).execute()
+        if not response.data:
+            return {"error":"Error joining room"}
+        return response.data[0]
+    except Exception as e:
+        print(f"Error joining community: {e}")
+        return None
+    
+# Get pending applications for a project
+def get_pending_applications_for_project(project_id: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .select("*, profiles(*)")
+            .eq("project_id", project_id)
+            .eq("status", "pending")
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching pending applications: {e}")
+        return []
+
+# Update project member status
+def update_project_member_status(member_id: str, status: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .update({"status": status})
+            .eq("id", member_id)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error updating project member status: {e}")
+        return None
+
+# Get project member by ID
+def get_project_member(member_id: str):
+    try:
+        response = (
+            supabase.table("app_project_members")
+            .select("*, app_projects(*)")
+            .eq("id", member_id)
+            .single()
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching project member: {e}")
+        return None   
+
+# Create a room for a project
+def create_project_room(project_data: dict):
+    try:
+        print(f"Creating room for project: {project_data['title']}")
+        
+        # Debug room_members table structure
+        debug_room_members_structure()
+        
+        # Create room for the project
+        room_data = {
+            "name": project_data['title'],
+            "type": "group",
+            "created_by": project_data['created_by'],
+            "description": project_data['description']
+        }
+        
+        print(f"Room data: {room_data}")
+        
+        response = supabase.table("rooms").insert(room_data).execute()
+        print(f"Room creation response: {response}")
+        
+        if response.data:
+            room_id = response.data[0]['id']
+            print(f"Created room with ID: {room_id}")
+            
+            # Add project owner as admin member
+            member_data = {
+                "room_id": room_id,
+                "user_id": project_data['created_by'],
+                "role": "admin"
+                # Removed request_status as it might not exist in the table
+            }
+            
+            print(f"Adding member: {member_data}")
+            try:
+                member_response = supabase.table("room_members").insert(member_data).execute()
+                print(f"Member addition response: {member_response}")
+            except Exception as member_error:
+                print(f"Error adding member to room: {member_error}")
+                # Continue even if member addition fails
+                # The room was created successfully
+            
+            return room_id
+        else:
+            print("No data returned from room creation")
+            return None
+    except Exception as e:
+        print(f"Error creating project room: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+# Update project with room_id
+def update_project_room_id(project_id: str, room_id: str):
+    try:
+        response = (
+            supabase.table("app_projects")
+            .update({"room_id": room_id})
+            .eq("id", project_id)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error updating project room_id: {e}")
+        return None
+
+# Add user to project room
+def add_user_to_project_room(room_id: str, user_id: str):
+    try:
+        member_data = {
+            "room_id": room_id,
+            "user_id": user_id,
+            "role": "member"
+            # Removed request_status as it might not exist in the table
+        }
+        response = supabase.table("room_members").insert(member_data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error adding user to project room: {e}")
+        return None
+
+# Get project room info
+def get_project_room(project_id: str):
+    try:
+        response = (
+            supabase.table("app_projects")
+            .select("room_id")
+            .eq("id", project_id)
+            .single()
+            .execute()
+        )
+        return response.data.get('room_id') if response.data else None
+    except Exception as e:
+        print(f"Error getting project room: {e}")
+        return None
+
+# Check if room exists for a project
+def check_project_room_exists(project_id: str):
+    try:
+        room_id = get_project_room(project_id)
+        if room_id:
+            # Verify the room actually exists
+            room_response = (
+                supabase.table("rooms")
+                .select("id")
+                .eq("id", room_id)
+                .single()
+                .execute()
+            )
+            return room_response.data is not None
+        return False
+    except Exception as e:
+        print(f"Error checking project room existence: {e}")
+        return False
+
+# Debug function to check room_members table structure
+def debug_room_members_structure():
+    try:
+        # Try to get a sample record to see the structure
+        response = supabase.table("room_members").select("*").limit(1).execute()
+        print(f"Room members table structure: {response.data}")
+        return True
+    except Exception as e:
+        print(f"Error checking room_members structure: {e}")
+        return False
+
+async def check_community_membership(community_id: str, user_id: str):
+    # Check if user is member of community
+    result = supabase.table("room_members") \
+                   .select("*") \
+                   .eq("room_id", community_id) \
+                   .eq("user_id", user_id) \
+                   .execute()
+    return len(result.data) > 0
+
+async def check_community_ownership(community_id: str, user_id: str):
+    # Check if user is owner of community
+    result = supabase.table("rooms") \
+                   .select("*") \
+                   .eq("id", community_id) \
+                   .eq("created_by", user_id) \
+                   .execute()
+    return len(result.data) > 0
+
+async def get_community_messages(community_id: str):
+    # Get chat messages for community
+    result = supabase.table("messages") \
+                   .select("*") \
+                   .eq("room_id", community_id) \
+                   .order("created_at") \
+                   .execute()
+    return result.data
+
+async def get_community_members(community_id: str):
+    # Get all members of community
+    result = supabase.table("room_members") \
+                   .select("*, profiles(*)") \
+                   .eq("room_id", community_id) \
+                   .execute()
+    return result.data
+
+
+#------------------------ handle community ---------------------------

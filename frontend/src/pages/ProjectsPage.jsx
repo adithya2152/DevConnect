@@ -28,7 +28,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import {
@@ -53,7 +55,7 @@ import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
 import useAuthGuard from '../hooks/useAuthGuarf';
-import { createProject, applyToProject } from '../api/chatApi';
+import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication, createProjectRoom, addUserToProjectRoom } from '../api/chatApi';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -199,6 +201,533 @@ const DifficultyChip = styled(Chip)(({ theme, difficulty }) => {
   };
 });
 
+// Project Applications Modal Component
+const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) => {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [actionLoading, setActionLoading] = useState({});
+
+  useEffect(() => {
+    if (open && projectId) {
+      fetchApplications();
+    }
+  }, [open, projectId]);
+
+  const fetchApplications = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await getProjectApplications(projectId);
+      setApplications(response.applications || []);
+    } catch (err) {
+      setError('Failed to fetch applications');
+      console.error('Error fetching applications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAccept = async (memberId) => {
+    setActionLoading(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await acceptProjectApplication(memberId);
+      // Add user to project room
+      await addUserToProjectRoom(projectId);
+      // Refresh applications
+      await fetchApplications();
+    } catch (err) {
+      console.error('Error accepting application:', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [memberId]: false }));
+    }
+  };
+
+  const handleDeny = async (memberId) => {
+    setActionLoading(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await denyProjectApplication(memberId);
+      // Refresh applications
+      await fetchApplications();
+    } catch (err) {
+      console.error('Error denying application:', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [memberId]: false }));
+    }
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden',
+        }
+      }}
+    >
+      {/* Header with gradient background */}
+      <Box sx={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 3,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Background pattern */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%)',
+          opacity: 0.6
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box sx={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              p: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Users size={24} color="#ffffff" />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: '#ffffff', 
+              fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              Project Applications
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ 
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontWeight: 500
+          }}>
+            "{projectTitle}"
+          </Typography>
+        </Box>
+      </Box>
+
+      <DialogContent sx={{ 
+        p: 0,
+        background: 'rgba(0, 0, 0, 0.3)',
+        backdropFilter: 'blur(16px)',
+        minHeight: '400px'
+      }}>
+        {loading ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <CircularProgress size={60} sx={{ color: '#667eea' }} />
+            <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+              Loading Applications...
+            </Typography>
+            <Typography variant="body2" color="#9ca3af">
+              Fetching pending applications for your project
+            </Typography>
+          </Box>
+        ) : error ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <Box sx={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              borderRadius: '50%',
+              p: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <X size={32} color="#ef4444" />
+            </Box>
+            <Typography variant="h6" color="#ef4444" sx={{ fontWeight: 600 }}>
+              Error Loading Applications
+            </Typography>
+            <Typography variant="body2" color="#9ca3af" sx={{ textAlign: 'center' }}>
+              {error}
+            </Typography>
+          </Box>
+        ) : applications.length === 0 ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            py: 8,
+            gap: 2
+          }}>
+            <Box sx={{
+              background: 'rgba(107, 114, 128, 0.2)',
+              borderRadius: '50%',
+              p: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Users size={48} color="#6b7280" />
+            </Box>
+            <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+              No Pending Applications
+            </Typography>
+            <Typography variant="body2" color="#9ca3af" sx={{ textAlign: 'center', maxWidth: 300 }}>
+              You don't have any pending applications for this project yet. 
+              Share your project to attract contributors!
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" color="#ffffff" sx={{ 
+              mb: 3, 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Badge badgeContent={applications.length} color="primary" sx={{
+                '& .MuiBadge-badge': {
+                  background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                  color: '#ffffff',
+                  fontWeight: 600
+                }
+              }}>
+                <Users size={20} />
+              </Badge>
+              Pending Applications ({applications.length})
+            </Typography>
+            
+            <Stack spacing={3}>
+              {applications.map((application, index) => (
+                <Paper
+                  key={application.id}
+                  sx={{
+                    p: 3,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                      boxShadow: '0 8px 32px rgba(102, 126, 234, 0.2)',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    {/* Avatar Section */}
+                    <Box sx={{ position: 'relative' }}>
+                      <Avatar
+                        src={application.profiles?.avatar}
+                        sx={{ 
+                          width: 64, 
+                          height: 64,
+                          border: '3px solid rgba(102, 126, 234, 0.3)',
+                          boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)'
+                        }}
+                      >
+                        {application.profiles?.full_name?.[0] || application.profiles?.username?.[0] || 'U'}
+                      </Avatar>
+                      <Box sx={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -2,
+                        background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid rgba(0, 0, 0, 0.1)'
+                      }}>
+                        <Clock size={12} color="#ffffff" />
+                      </Box>
+                    </Box>
+
+                    {/* Content Section */}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                        <Typography variant="h6" color="#ffffff" sx={{ fontWeight: 600 }}>
+                          {application.profiles?.full_name || application.profiles?.username || 'Unknown User'}
+                        </Typography>
+                        <Chip 
+                          label="Pending" 
+                          size="small"
+                          sx={{
+                            background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                      
+                      <Typography variant="body2" color="#9ca3af" sx={{ mb: 2 }}>
+                        {application.profiles?.email}
+                      </Typography>
+                      
+                      {application.contribution_description && (
+                        <Box sx={{
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          border: '1px solid rgba(102, 126, 234, 0.2)',
+                          borderRadius: '12px',
+                          p: 2,
+                          mb: 2
+                        }}>
+                          <Typography variant="body2" color="#ffffff" sx={{ fontWeight: 500, mb: 0.5 }}>
+                            Contribution Description:
+                          </Typography>
+                          <Typography variant="body2" color="#9ca3af" sx={{ fontStyle: 'italic' }}>
+                            "{application.contribution_description}"
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {/* Action Buttons */}
+                      <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={() => handleAccept(application.id)}
+                          disabled={actionLoading[application.id]}
+                          startIcon={actionLoading[application.id] ? <CircularProgress size={16} /> : <CheckCircle size={16} />}
+                          sx={{
+                            background: 'linear-gradient(90deg, #10b981, #059669)',
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                            '&:hover': {
+                              background: 'linear-gradient(90deg, #059669, #10b981)',
+                              transform: 'translateY(-1px)',
+                              boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
+                            },
+                            '&:disabled': {
+                              background: 'rgba(16, 185, 129, 0.3)',
+                              transform: 'none',
+                            }
+                          }}
+                        >
+                          {actionLoading[application.id] ? 'Accepting...' : 'Accept'}
+                        </Button>
+                        
+                        <Button
+                          variant="outlined"
+                          size="medium"
+                          onClick={() => handleDeny(application.id)}
+                          disabled={actionLoading[application.id]}
+                          startIcon={actionLoading[application.id] ? <CircularProgress size={16} /> : <X size={16} />}
+                          sx={{
+                            borderColor: '#ef4444',
+                            color: '#ef4444',
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            '&:hover': {
+                              borderColor: '#dc2626',
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              transform: 'translateY(-1px)',
+                            },
+                            '&:disabled': {
+                              borderColor: 'rgba(239, 68, 68, 0.3)',
+                              color: 'rgba(239, 68, 68, 0.3)',
+                              transform: 'none',
+                            }
+                          }}
+                        >
+                          {actionLoading[application.id] ? 'Denying...' : 'Deny'}
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ 
+        p: 3, 
+        background: 'rgba(0, 0, 0, 0.2)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <Button 
+          onClick={onClose} 
+          sx={{ 
+            color: '#9ca3af',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            borderRadius: '12px',
+            '&:hover': {
+              backgroundColor: 'rgba(156, 163, 175, 0.1)',
+              color: '#ffffff'
+            }
+          }}
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// No Community Dialog Component
+const NoCommunityDialog = ({ open, onClose, projectTitle }) => {
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+        }
+      }}
+    >
+      <Box sx={{
+        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+        p: 3,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 80%, rgba(251, 191, 36, 0.3) 0%, transparent 50%)',
+          opacity: 0.6
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <Box sx={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            p: 2,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 2
+          }}>
+            <Users size={32} color="#ffffff" />
+          </Box>
+          <Typography variant="h5" sx={{ 
+            color: '#ffffff', 
+            fontWeight: 700,
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Community Not Created Yet
+          </Typography>
+        </Box>
+      </Box>
+
+      <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" color="#ffffff" sx={{ mb: 2, fontWeight: 600 }}>
+          "{projectTitle}" Community
+        </Typography>
+        <Typography variant="body1" color="#9ca3af" sx={{ mb: 3 }}>
+          The project owner hasn't created a community space yet. 
+          You'll be able to join the community once they set it up!
+        </Typography>
+        <Box sx={{
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          borderRadius: '12px',
+          p: 3,
+          mb: 3
+        }}>
+          <Typography variant="body2" color="#fbbf24" sx={{ fontWeight: 600 }}>
+            💡 Tip: You can contact the project owner to request them to create a community space for better collaboration!
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ 
+        p: 3, 
+        background: 'rgba(0, 0, 0, 0.2)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center'
+      }}>
+        <Button 
+          onClick={onClose}
+          sx={{ 
+            background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+            color: '#ffffff',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 4,
+            py: 1.5,
+            borderRadius: '12px',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
+              transform: 'translateY(-1px)',
+            }
+          }}
+        >
+          Got it!
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// Helper function to get proper image URL
+const getProjectImageUrl = (imageUrl) => {
+  if (!imageUrl || imageUrl === '' || imageUrl === 'EMPTY') {
+    // Return a default project image - same as backend default
+    return 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop';
+  }
+  return imageUrl;
+};
+
 function ProjectsPage() {
   useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -253,6 +782,20 @@ function ProjectsPage() {
   const [applyError, setApplyError] = useState({}); // projectId: string
   const [appliedProjects, setAppliedProjects] = useState([]); // projectIds
 
+  // Project Applications Modal State
+  const [applicationsModalOpen, setApplicationsModalOpen] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectTitle, setCurrentProjectTitle] = useState('');
+
+  // Community/Room State
+  const [roomLoading, setRoomLoading] = useState({});
+  const [acceptedProjects, setAcceptedProjects] = useState([]); // Track projects where user is accepted
+  const [projectsWithRooms, setProjectsWithRooms] = useState([]); // Track projects that have rooms created
+
+  // No Community Dialog State
+  const [noCommunityDialogOpen, setNoCommunityDialogOpen] = useState(false);
+  const [noCommunityProjectTitle, setNoCommunityProjectTitle] = useState('');
+
   // Get logged-in user
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
@@ -278,14 +821,17 @@ function ProjectsPage() {
         // Map members to a flat array of profile info for each project
         const projectsWithMembers = (data || []).map(project => ({
           ...project,
-          members: (project.app_project_members || []).map(m => ({
-            id: m.profiles?.id,
-            name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
-            avatar: m.profiles?.avatar || '',
-            email: m.profiles?.email || '',
-            role: m.role,
-            status: m.status,
-          }))
+          members: (project.app_project_members || [])
+            .filter(m => m.status === 'active')
+            .map(m => ({
+              id: m.profiles?.id,
+              name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+              avatar: m.profiles?.avatar || '',
+              email: m.profiles?.email || '',
+              role: m.role,
+              status: m.status,
+            })),
+          applications_count: project.applications_count,
         }));
         setProjects(projectsWithMembers);
       } catch (err) {
@@ -303,6 +849,12 @@ function ProjectsPage() {
     if (projects.length > 0 && userId) {
       const applied = projects.filter(p => (p.app_project_members || []).some(m => m.user_id === userId)).map(p => p.id);
       setAppliedProjects(applied);
+      
+      // Check which projects have rooms (for projects owned by current user)
+      const projectsWithRooms = projects
+        .filter(p => p.created_by === userId && p.room_id)
+        .map(p => p.id);
+      setProjectsWithRooms(projectsWithRooms);
     }
   }, [projects, userId]);
 
@@ -432,6 +984,89 @@ function ProjectsPage() {
     }
   };
 
+  // Open Applications Modal Handler
+  const handleOpenApplicationsModal = (projectId, projectTitle) => {
+    setCurrentProjectId(projectId);
+    setCurrentProjectTitle(projectTitle);
+    setApplicationsModalOpen(true);
+  };
+
+  const handleCloseApplicationsModal = () => {
+    setApplicationsModalOpen(false);
+    setCurrentProjectId(null);
+    setCurrentProjectTitle('');
+  };
+
+  const handleCloseNoCommunityDialog = () => {
+    setNoCommunityDialogOpen(false);
+    setNoCommunityProjectTitle('');
+  };
+
+  // Community/Room Handlers
+  const handleCreateCommunity = async (projectId) => {
+    // If room already exists, just navigate to community
+    if (projectsWithRooms.includes(projectId)) {
+      window.location.href = '/community';
+      return;
+    }
+    
+    // Prevent multiple clicks during creation
+    if (roomLoading[projectId]) {
+      return;
+    }
+    
+    setRoomLoading(prev => ({ ...prev, [projectId]: true }));
+    try {
+      const result = await createProjectRoom(projectId);
+      console.log('Room creation result:', result);
+      
+      // Add to projects with rooms
+      setProjectsWithRooms(prev => [...prev, projectId]);
+      
+      // Navigate to community page
+      window.location.href = '/community';
+    } catch (err) {
+      console.error('Error creating community:', err);
+      // Don't update state on error
+    } finally {
+      setRoomLoading(prev => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  const handleJoinCommunity = async (projectId) => {
+    // Check if project has a room
+    const project = projects.find(p => p.id === projectId);
+    if (!project || !project.room_id) {
+      // Show no community dialog
+      setNoCommunityProjectTitle(project?.title || 'Unknown Project');
+      setNoCommunityDialogOpen(true);
+      return;
+    }
+
+    setRoomLoading(prev => ({ ...prev, [projectId]: true }));
+    try {
+      await addUserToProjectRoom(projectId);
+      // Navigate to community page
+      window.location.href = '/community';
+    } catch (err) {
+      console.error('Error joining community:', err);
+    } finally {
+      setRoomLoading(prev => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  // Update accepted projects when applications are accepted
+  useEffect(() => {
+    if (projects.length > 0 && userId) {
+      const accepted = projects.filter(p => 
+        (p.app_project_members || []).some(m => 
+          m.user_id === userId && m.status === 'active'
+        )
+      ).map(p => p.id);
+      setAcceptedProjects(accepted);
+    }
+  }, [projects, userId]);
+
   return (
     <>
       <NavBar />
@@ -456,7 +1091,7 @@ function ProjectsPage() {
                     mb: 1
                   }}
                 >
-                  Collaboration Space
+                  Projects Space
                 </Typography>
                 <Typography variant="body1" color="#9ca3af">
                   Discover, create, and join exciting developer projects
@@ -654,7 +1289,7 @@ function ProjectsPage() {
                       <CardMedia
                         component="img"
                         height="200"
-                        image={project.image_url}
+                        image={getProjectImageUrl(project.image_url)}
                         alt={project.title}
                         sx={{
                           transition: 'transform 0.3s ease',
@@ -828,14 +1463,55 @@ function ProjectsPage() {
                       {/* Action Buttons */}
                       <Stack direction="row" spacing={1}>
                         {selectedTab === 0 && (
-                          <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
-                            {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
-                          </GradientButton>
+                          <>
+                            {acceptedProjects.includes(project.id) ? (
+                              <GradientButton 
+                                fullWidth 
+                                onClick={() => handleJoinCommunity(project.id)}
+                                disabled={roomLoading[project.id]}
+                                startIcon={<MessageSquare size={16} />}
+                              >
+                                {roomLoading[project.id] ? 'Joining...' : 'Join Community'}
+                              </GradientButton>
+                            ) : (
+                              <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
+                                {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
+                              </GradientButton>
+                            )}
+                          </>
                         )}
                         {selectedTab === 1 && (
-                          <GradientButton fullWidth startIcon={<MessageSquare size={16} />}>
-                            Open Chat
-                          </GradientButton>
+                          <>
+                            <GradientButton 
+                              fullWidth 
+                              startIcon={<MessageSquare size={16} />} 
+                              onClick={() => handleOpenApplicationsModal(project.id, project.title)}
+                            >
+                              View Applications ({project.applications_count || 0})
+                            </GradientButton>
+                            <GradientButton 
+                              fullWidth 
+                              onClick={() => handleCreateCommunity(project.id)}
+                              disabled={roomLoading[project.id]}
+                              startIcon={<Users size={16} />}
+                              sx={{
+                                background: projectsWithRooms.includes(project.id) 
+                                  ? 'linear-gradient(90deg, #10b981, #059669)' 
+                                  : 'linear-gradient(90deg, #8b5cf6, #a855f7)',
+                                '&:hover': {
+                                  background: projectsWithRooms.includes(project.id)
+                                    ? 'linear-gradient(90deg, #059669, #10b981)'
+                                    : 'linear-gradient(90deg, #a855f7, #8b5cf6)',
+                                },
+                                '&:disabled': {
+                                  background: 'rgba(139, 92, 246, 0.3)',
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                }
+                              }}
+                            >
+                              {roomLoading[project.id] ? 'Creating...' : projectsWithRooms.includes(project.id) ? 'Go to Community' : 'Create Community'}
+                            </GradientButton>
+                          </>
                         )}
                         <IconButton>
                           <Eye size={16} />
@@ -1507,6 +2183,21 @@ function ProjectsPage() {
               </Box>
             </DialogContent>
           </Dialog>
+
+          {/* Project Applications Modal */}
+          <ProjectApplicationsModal
+            open={applicationsModalOpen}
+            onClose={handleCloseApplicationsModal}
+            projectId={currentProjectId}
+            projectTitle={currentProjectTitle}
+          />
+
+          {/* No Community Dialog */}
+          <NoCommunityDialog
+            open={noCommunityDialogOpen}
+            onClose={handleCloseNoCommunityDialog}
+            projectTitle={noCommunityProjectTitle}
+          />
 
           {/* Coming Soon Notice */}
           <FilterCard sx={{ mt: 8, textAlign: 'center' }}>

@@ -417,3 +417,118 @@ export const applyToProject = async (memberData) => {
   }
   return await response.json();
 };
+
+/**
+ * Get pending applications for a project
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} List of pending applications
+ */
+export const getProjectApplications = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/applications`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch project applications');
+  }
+  return await response.json();
+};
+
+/**
+ * Accept a project application
+ * @param {string} memberId - The member ID
+ * @returns {Promise<Object>} Success response
+ */
+export const acceptProjectApplication = async (memberId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/app_project_members/${memberId}/accept`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to accept application');
+  }
+  return await response.json();
+};
+
+/**
+ * Deny a project application
+ * @param {string} memberId - The member ID to deny
+ * @returns {Promise<Object>} Denial result
+ */
+export const denyProjectApplication = async (memberId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/app_project_members/${memberId}/deny`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to deny project application');
+  }
+  return await response.json();
+};
+
+/**
+ * Create a room for a project
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Room creation result
+ */
+export const createProjectRoom = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/create-room`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create project room');
+  }
+  return await response.json();
+};
+
+/**
+ * Add user to project room
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Add to room result
+ */
+export const addUserToProjectRoom = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/add-to-room`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add user to project room');
+  }
+  return await response.json();
+};
