@@ -409,14 +409,14 @@ async def get_notifications(user_id: str):
                .execute())
         
         unread = (supabase.table("notifications")
-                .select("count")
+                .select("*")
                 .eq("recipient_id", user_id)
                 .eq("is_read", False)
                 .execute())
         
         return {
             "notifications": notif.data,
-            "unread_count": unread.count or 0
+            "unread_count": len(unread.data) if unread.data else 0
         }
     except Exception as e:
         print(f"Error fetching notifications: {e}")

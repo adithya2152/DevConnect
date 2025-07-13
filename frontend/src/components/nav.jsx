@@ -371,7 +371,19 @@ export default function NavBar() {
               onClick={handleNotificationOpen}
               sx={{ ml: 1 }}
             >
-              <Badge badgeContent={unreadCount} color="error" max={99}>
+              <Badge 
+                badgeContent={unreadCount > 0 ? "" : 0} 
+                color="error" 
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: unreadCount > 0 ? '#ef4444' : 'transparent',
+                    minWidth: unreadCount > 0 ? '8px' : '0px',
+                    height: unreadCount > 0 ? '8px' : '0px',
+                    borderRadius: '50%',
+                    border: unreadCount > 0 ? '2px solid #ffffff' : 'none',
+                  }
+                }}
+              >
                 <NotificationsIcon />
               </Badge>
             </IconButton>
@@ -425,7 +437,7 @@ export default function NavBar() {
                     {notifications.map((notification) => (
                       <ListItem
                         key={notification.id}
-                        button
+                        component="button"
                         onClick={() => handleNotificationClick(notification)}
                         sx={{
                           bgcolor: notification.is_read

@@ -3,7 +3,7 @@ from typing import List
 from datetime import datetime
 from pydantic import BaseModel
 from auth.dependencies import get_current_user_id
-from db import get_unread_notifications, get_notifications, Update_notif
+from db import get_unread_notifications, get_notifications, Update_notif, supabase
 
 notifrouter = APIRouter()
 
@@ -51,6 +51,34 @@ async def mark_all_notifications_as_read(
             print("✅ All notifications marked as read")
             
         return {"status": "success", "message": "All notifications marked as read"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+@notifrouter.patch("/notifications/{notification_id}/read")
+async def mark_notification_as_read(
+    notification_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    try:
+        # Verify the notification belongs to the current user
+        notification = supabase.table("notifications").select("*").eq("id", notification_id).eq("recipient_id", current_user_id).single().execute()
+        
+        if not notification.data:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        # Mark as read
+        result = await Update_notif(notification_id)
+        
+        if result:
+            return {"status": "success", "message": "Notification marked as read"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to mark notification as read")
+            
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
