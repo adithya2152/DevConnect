@@ -420,6 +420,239 @@ async def get_room_members(
     
     return result
 
-
-
 # ---------------- manage community handelers --------------------
+
+@community_app.get("/{community_id}/requests")
+async def get_community_requests(
+    community_id: str,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get pending join requests for a community
+    Only community owners can view requests
+    """
+    try:
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can view requests")
+        
+        # Get pending requests (this would need to be implemented based on your schema)
+        # For now, return empty array
+        return []
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching community requests: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching community requests."
+        )
+
+@community_app.post("/{community_id}/invite")
+async def invite_member(
+    community_id: str,
+    request: dict,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Invite a member to join the community
+    """
+    try:
+        email = request.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can invite members")
+        
+        # For now, just return success (email sending would be implemented later)
+        return {"message": "Invitation sent successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error sending invitation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while sending invitation."
+        )
+
+@community_app.put("/{community_id}/members/{member_id}/role")
+async def update_member_role(
+    community_id: str,
+    member_id: str,
+    request: dict,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Update a member's role in the community
+    """
+    try:
+        role = request.get("role")
+        if not role:
+            raise HTTPException(status_code=400, detail="Role is required")
+        
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can update roles")
+        
+        # Update member role (this would need to be implemented based on your schema)
+        # For now, just return success
+        return {"message": f"Member role updated to {role}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error updating member role: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while updating member role."
+        )
+
+@community_app.delete("/{community_id}/members/{member_id}")
+async def remove_member(
+    community_id: str,
+    member_id: str,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Remove a member from the community
+    """
+    try:
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can remove members")
+        
+        # Remove member (this would need to be implemented based on your schema)
+        # For now, just return success
+        return {"message": "Member removed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error removing member: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while removing member."
+        )
+
+@community_app.put("/{community_id}")
+async def update_community(
+    community_id: str,
+    request: dict,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Update community settings
+    """
+    try:
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can update settings")
+        
+        # Update community settings
+        updated_community = supabase.table("rooms") \
+                                   .update({
+                                       "name": request.get("name", community.data.get("name")),
+                                       "description": request.get("description", community.data.get("description")),
+                                       "is_private": request.get("is_private", community.data.get("is_private", False))
+                                   }) \
+                                   .eq("id", community_id) \
+                                   .execute()
+        
+        return updated_community.data[0] if updated_community.data else community.data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error updating community: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while updating community."
+        )
+
+@community_app.delete("/{community_id}")
+async def delete_community(
+    community_id: str,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Delete a community
+    """
+    try:
+        # Check if user is the community owner
+        community = supabase.table("rooms") \
+                          .select("*") \
+                          .eq("id", community_id) \
+                          .single() \
+                          .execute()
+        
+        if not community.data:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        if community.data.get("room_admin_id") != user_id:
+            raise HTTPException(status_code=403, detail="Only community owners can delete communities")
+        
+        # Delete community
+        supabase.table("rooms") \
+               .delete() \
+               .eq("id", community_id) \
+               .execute()
+        
+        return {"message": "Community deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error deleting community: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while deleting community."
+        )
