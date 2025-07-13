@@ -323,6 +323,8 @@ async def get_community(
     community_id: str,
     user_id: str = Depends(get_current_user_id)
 ):
+    print(f"🔍 Getting community: {community_id}, user: {user_id}")
+    
     community = supabase.table("rooms") \
                       .select("*") \
                       .eq("id", community_id) \
@@ -330,8 +332,10 @@ async def get_community(
                       .execute()
     
     if not community.data:
+        print(f"❌ Community not found: {community_id}")
         raise HTTPException(status_code=404, detail="Community not found")
     
+    print(f"✅ Found community: {community.data}")
     return community.data
 
 
@@ -388,9 +392,14 @@ async def get_room_members(
     room_id: str,
     user_id: str = Depends(get_current_user_id)
 ):
+    print(f"🔍 Getting members for room: {room_id}, user: {user_id}")
+    
     # Verify user is member
     is_member = await check_community_membership(room_id, user_id)
+    print(f"👥 Is member: {is_member}")
+    
     if not is_member:
+        print(f"❌ Access denied: User {user_id} is not member of room {room_id}")
         raise HTTPException(status_code=403, detail="Not a member")
 
     # Get room members
@@ -398,6 +407,8 @@ async def get_room_members(
                     .select("*") \
                     .eq("room_id", room_id) \
                     .execute()
+
+    print(f"📋 Found {len(members.data)} members")
 
     # Get profile info separately
     profiles = {}
@@ -418,6 +429,7 @@ async def get_room_members(
             "profile": profiles.get(member["user_id"], {})
         })
     
+    print(f"✅ Returning {len(result)} members with profiles")
     return result
 
 # ---------------- manage community handelers --------------------
@@ -432,6 +444,8 @@ async def get_community_requests(
     Only community owners can view requests
     """
     try:
+        print(f"🔍 Checking requests for community: {community_id}, user: {user_id}")
+        
         # Check if user is the community owner
         community = supabase.table("rooms") \
                           .select("*") \
@@ -440,10 +454,22 @@ async def get_community_requests(
                           .execute()
         
         if not community.data:
+            print(f"❌ Community not found: {community_id}")
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        print(f"📋 Community data: {community.data}")
+        print(f"👤 User ID: {user_id}")
+        print(f"👑 Admin ID: {community.data.get('room_admin_id')}")
+        
+        # Check if user is the owner
+        is_owner = community.data.get("room_admin_id") == user_id
+        print(f"🔐 Is owner: {is_owner}")
+        
+        if not is_owner:
+            print(f"❌ Access denied: User {user_id} is not owner of community {community_id}")
             raise HTTPException(status_code=403, detail="Only community owners can view requests")
+        
+        print(f"✅ Access granted for user {user_id}")
         
         # Get pending requests (this would need to be implemented based on your schema)
         # For now, return empty array
