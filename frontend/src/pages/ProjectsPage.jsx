@@ -1858,7 +1858,7 @@ function ProjectsPage() {
                     </FormControl>
                   </Grid>
                     
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={8}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Project Type</InputLabel>
                       <StyledSelect
@@ -1867,10 +1867,14 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, project_type: String(e.target.value) }))}
                         label="Project Type"
                           sx={{
+                            width: '100%',
+                            minWidth: '100%',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              width: '100%',
+                              minWidth: '100%',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -1879,7 +1883,17 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
                             },
-                            '& .MuiSelect-select': { color: '#ffffff' }
+                            '& .MuiSelect-select': { 
+                              color: '#ffffff',
+                              width: '100%',
+                              minWidth: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                            },
+                            '& .MuiInputBase-input': {
+                              width: '100%',
+                              minWidth: '100%',
+                            }
                           }}
                           MenuProps={{ 
                             PaperProps: { 
@@ -1902,7 +1916,7 @@ function ProjectsPage() {
                     </FormControl>
                   </Grid>
                     
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={8}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Domain</InputLabel>
                       <StyledSelect
@@ -1911,10 +1925,14 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, domain: String(e.target.value) }))}
                         label="Domain"
                           sx={{
+                            width: '100%',
+                            minWidth: '100%',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              width: '100%',
+                              minWidth: '100%',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -1923,7 +1941,17 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                             },
                           },
-                          '& .MuiSelect-select': { color: '#ffffff' }
+                          '& .MuiSelect-select': { 
+                            color: '#ffffff',
+                            width: '100%',
+                            minWidth: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                          },
+                          '& .MuiInputBase-input': {
+                            width: '100%',
+                            minWidth: '100%',
+                          }
                         }}
                         MenuProps={{ 
                           PaperProps: { 
@@ -2081,6 +2109,7 @@ function ProjectsPage() {
                           <TextField 
                             {...params} 
                             label="Tech Stack" 
+                            InputLabelProps={{ style: { color: '#9ca3af' } }}
                             fullWidth 
                             placeholder="Enter technologies (press Enter to add)" 
                             InputProps={{ 
@@ -2155,6 +2184,7 @@ function ProjectsPage() {
                           <TextField 
                             {...params} 
                             label="Programming Languages" 
+                            InputLabelProps={{ style: { color: '#9ca3af' } }}
                             fullWidth 
                             placeholder="Enter languages (press Enter to add)" 
                             InputProps={{ 
