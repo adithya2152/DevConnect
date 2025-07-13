@@ -67,17 +67,29 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# Explicit OPTIONS handler@app.options("/{path:path}")
+# Explicit OPTIONS handler
+@app.options("/{path:path}")
 async def preflight_handler(request: Request, path: str):
-    return Response(
-        status_code=204,
-        headers={
-            "Access-Control-Allow-Origin": "https://dev-connect-puce.vercel.app",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE, PUT",
-            "Access-Control-Allow-Headers": request.headers.get("Access-Control-Request-Headers", "*"),
-            "Access-Control-Max-Age": "86400"
-        }
-    )
+    origin = request.headers.get("Origin")
+    allowed_origins = [
+        "https://dev-connect-puce.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:8000"
+    ]
+    
+    # Check if origin is allowed
+    if origin in allowed_origins:
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE, PUT",
+                "Access-Control-Allow-Headers": request.headers.get("Access-Control-Request-Headers", "*"),
+                "Access-Control-Max-Age": "86400"
+            }
+        )
+    else:
+        return Response(status_code=400)
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
