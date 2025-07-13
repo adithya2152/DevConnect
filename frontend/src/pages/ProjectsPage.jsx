@@ -50,7 +50,7 @@ import {
   CheckCircle,
   Pause,
   X,
-  Settings
+  Settings,
 } from 'lucide-react';
 import NavBar from '../components/nav';
 import axios from 'axios';
@@ -2088,10 +2088,14 @@ function ProjectsPage() {
                               style: { color: '#ffffff' } 
                             }} 
                             sx={{ 
+                              width: '100%',
+                              minWidth: '100%',
                               '& .MuiOutlinedInput-root': {
                                 background: 'rgba(255, 255, 255, 0.05)',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
                                 borderRadius: '12px',
+                                minHeight: '56px',
+                                width: '100%',
                                 '&:hover': {
                                   borderColor: 'rgba(255, 255, 255, 0.2)',
                                 },
@@ -2102,10 +2106,21 @@ function ProjectsPage() {
                               },
                               '& .MuiInputBase-input': {
                                 color: '#ffffff',
+                                padding: '16.5px 14px',
+                                width: '100%',
                                 '&::placeholder': {
                                   color: '#9ca3af',
                                   opacity: 1,
                                 },
+                              },
+                              '& .MuiAutocomplete-input': {
+                                padding: '0 !important',
+                                width: '100% !important',
+                                minWidth: '100% !important',
+                              },
+                              '& .MuiAutocomplete-inputRoot': {
+                                width: '100%',
+                                minWidth: '100%',
                               },
                             }} 
                           />
@@ -2147,10 +2162,23 @@ function ProjectsPage() {
                               style: { color: '#ffffff' } 
                             }} 
                             sx={{ 
+                              width: '100%',
+                              minWidth: '100%',
+                              '& .MuiInputBase-input': {
+                                color: '#ffffff',
+                                padding: '16.5px 14px',
+                                width: '100%',
+                                '&::placeholder': {
+                                  color: '#9ca3af',
+                                  opacity: 1,
+                                },
+                              },
                               '& .MuiOutlinedInput-root': {
                                 background: 'rgba(255, 255, 255, 0.05)',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
                                 borderRadius: '12px',
+                                minHeight: '56px',
+                                width: '100%',
                                 '&:hover': {
                                   borderColor: 'rgba(255, 255, 255, 0.2)',
                                 },
@@ -2159,12 +2187,14 @@ function ProjectsPage() {
                                   boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                                 },
                               },
-                              '& .MuiInputBase-input': {
-                                color: '#ffffff',
-                                '&::placeholder': {
-                                  color: '#9ca3af',
-                                  opacity: 1,
-                                },
+                              '& .MuiAutocomplete-input': {
+                                padding: '0 !important',
+                                width: '100% !important',
+                                minWidth: '100% !important',
+                              },
+                              '& .MuiAutocomplete-inputRoot': {
+                                width: '100%',
+                                minWidth: '100%',
                               },
                             }} 
                           />
