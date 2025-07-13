@@ -46,7 +46,7 @@ app.add_middleware(
         "http://localhost:8000/login"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],    
     allow_headers=["*"],
     expose_headers=["*"]
 )
