@@ -56,7 +56,7 @@ import NavBar from '../components/nav';
 import axios from 'axios';
 // import { supabase } from '../api/supabase';
 import useAuthGuard from '../hooks/useAuthGuarf';
-import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication, createProjectRoom, addUserToProjectRoom } from '../api/chatApi';
+import { createProject, applyToProject, getProjectApplications, acceptProjectApplication, denyProjectApplication, createProjectRoom, addUserToProjectRoom, joinProjectCommunity, checkProjectCommunityMembership } from '../api/chatApi';
 
 // Custom styled components
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -792,6 +792,7 @@ function ProjectsPage() {
   const [roomLoading, setRoomLoading] = useState({});
   const [acceptedProjects, setAcceptedProjects] = useState([]); // Track projects where user is accepted
   const [projectsWithRooms, setProjectsWithRooms] = useState([]); // Track projects that have rooms created
+  const [joinedCommunities, setJoinedCommunities] = useState([]); // Track projects where user has joined community
 
   // No Community Dialog State
   const [noCommunityDialogOpen, setNoCommunityDialogOpen] = useState(false);
@@ -845,7 +846,7 @@ function ProjectsPage() {
     fetchProjects();
   }, []);
 
-  // After fetching projects, mark already applied projects
+  // After fetching projects, mark already applied projects and joined communities
   useEffect(() => {
     if (projects.length > 0 && userId) {
       const applied = projects.filter(p => (p.app_project_members || []).some(m => m.user_id === userId)).map(p => p.id);
@@ -856,8 +857,32 @@ function ProjectsPage() {
         .filter(p => p.created_by === userId && p.room_id)
         .map(p => p.id);
       setProjectsWithRooms(projectsWithRooms);
+      
+      // Check community membership for accepted projects
+      const checkMembership = async () => {
+        const acceptedProjectIds = projects
+          .filter(p => acceptedProjects.includes(p.id) && p.room_id)
+          .map(p => p.id);
+        
+        const joinedCommunitiesList = [];
+        for (const projectId of acceptedProjectIds) {
+          try {
+            const result = await checkProjectCommunityMembership(projectId);
+            if (result.is_member) {
+              joinedCommunitiesList.push(projectId);
+            }
+          } catch (err) {
+            console.error(`Error checking membership for project ${projectId}:`, err);
+          }
+        }
+        setJoinedCommunities(joinedCommunitiesList);
+      };
+      
+      if (acceptedProjects.length > 0) {
+        checkMembership();
+      }
     }
-  }, [projects, userId]);
+  }, [projects, userId, acceptedProjects]);
 
   // Extract unique values for filters from real data
   const allDomains = [...new Set(projects.map(p => p.domain).filter(Boolean))];
@@ -1046,11 +1071,13 @@ function ProjectsPage() {
 
     setRoomLoading(prev => ({ ...prev, [projectId]: true }));
     try {
-      await addUserToProjectRoom(projectId);
-      // Navigate to community page
-      window.location.href = '/community';
+      const result = await joinProjectCommunity(projectId);
+      // Add to joined communities
+      setJoinedCommunities(prev => [...prev, projectId]);
+      console.log('Successfully joined community:', result);
     } catch (err) {
       console.error('Error joining community:', err);
+      // You could add a toast notification here for better UX
     } finally {
       setRoomLoading(prev => ({ ...prev, [projectId]: false }));
     }
@@ -1466,14 +1493,30 @@ function ProjectsPage() {
                         {selectedTab === 0 && (
                           <>
                             {acceptedProjects.includes(project.id) ? (
-                              <GradientButton 
-                                fullWidth 
-                                onClick={() => handleJoinCommunity(project.id)}
-                                disabled={roomLoading[project.id]}
-                                startIcon={<MessageSquare size={16} />}
-                              >
-                                {roomLoading[project.id] ? 'Joining...' : 'Join Community'}
-                              </GradientButton>
+                              joinedCommunities.includes(project.id) ? (
+                                <GradientButton 
+                                  fullWidth 
+                                  onClick={() => window.location.href = '/community'}
+                                  startIcon={<MessageSquare size={16} />}
+                                  sx={{
+                                    background: 'linear-gradient(90deg, #10b981, #059669)',
+                                    '&:hover': {
+                                      background: 'linear-gradient(90deg, #059669, #10b981)',
+                                    }
+                                  }}
+                                >
+                                  Go to Community
+                                </GradientButton>
+                              ) : (
+                                <GradientButton 
+                                  fullWidth 
+                                  onClick={() => handleJoinCommunity(project.id)}
+                                  disabled={roomLoading[project.id]}
+                                  startIcon={<MessageSquare size={16} />}
+                                >
+                                  {roomLoading[project.id] ? 'Joining...' : 'Join Community'}
+                                </GradientButton>
+                              )
                             ) : (
                           <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
                             {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}

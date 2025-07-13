@@ -532,3 +532,49 @@ export const addUserToProjectRoom = async (projectId) => {
   }
   return await response.json();
 };
+
+/**
+ * Join project community
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Join community result
+ */
+export const joinProjectCommunity = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/join-community`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to join project community');
+  }
+  return await response.json();
+};
+
+/**
+ * Check if user is member of project community
+ * @param {string} projectId - The project ID
+ * @returns {Promise<Object>} Membership check result
+ */
+export const checkProjectCommunityMembership = async (projectId) => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/community-membership`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to check community membership');
+  }
+  return await response.json();
+};

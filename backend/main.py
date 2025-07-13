@@ -397,6 +397,65 @@ async def add_user_to_project_room_endpoint(project_id: str, payload: dict = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Join project community (for accepted members)
+@app.post("/api/projects/{project_id}/join-community")
+async def join_project_community(project_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Get project room
+        room_id = get_project_room(project_id)
+        if not room_id:
+            raise HTTPException(status_code=404, detail="Project room not found")
+        
+        # Check if user is already a member of the room
+        existing_member = supabase.table("room_members") \
+            .select("*") \
+            .eq("room_id", room_id) \
+            .eq("user_id", payload["sub"]) \
+            .execute()
+        
+        if existing_member.data:
+            return {"status": "success", "message": "Already a member of this community"}
+        
+        # Add user to room_members table
+        member_data = {
+            "room_id": room_id,
+            "user_id": payload["sub"],
+            "role": "member"
+        }
+        
+        result = supabase.table("room_members").insert(member_data).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to join community")
+        
+        return {"status": "success", "message": "Successfully joined community"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Check if user is member of project community
+@app.get("/api/projects/{project_id}/community-membership")
+async def check_project_community_membership(project_id: str, payload: dict = Depends(verify_token)):
+    try:
+        # Get project room
+        room_id = get_project_room(project_id)
+        if not room_id:
+            return {"is_member": False}
+        
+        # Check if user is a member of the room
+        existing_member = supabase.table("room_members") \
+            .select("*") \
+            .eq("room_id", room_id) \
+            .eq("user_id", payload["sub"]) \
+            .execute()
+        
+        return {"is_member": len(existing_member.data) > 0}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Test endpoint to verify server is working
+@app.get("/api/test")
+async def test_endpoint():
+    return {"status": "success", "message": "Backend is working"}
+
 # -------- CHATBOT INTEGRATION ---------
 
 async def generate_reply(message: str, context: str = "") -> str:
