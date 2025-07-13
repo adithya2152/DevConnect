@@ -1537,7 +1537,10 @@ function ProjectsPage() {
                           </GradientButton>
                             <GradientButton 
                               fullWidth 
-                              onClick={() => handleCreateCommunity(project.id)}
+                              onClick={() => projectsWithRooms.includes(project.id) 
+                                ? window.location.href = `/communities/chat/${project.room_id}`
+                                : handleCreateCommunity(project.id)
+                              }
                               disabled={roomLoading[project.id]}
                               startIcon={<Users size={16} />}
                               sx={{
@@ -1741,57 +1744,25 @@ function ProjectsPage() {
                     <Settings size={20} />
                     Project Details
                   </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        label="Estimated Duration"
-                        name="estimated_duration"
-                        value={createForm.estimated_duration}
-                        onChange={handleCreateChange}
-                        fullWidth
-                        required
-                        placeholder="e.g., 2-3 months, 6 weeks"
-                        InputLabelProps={{ style: { color: '#9ca3af' } }}
-                        InputProps={{ 
-                          style: { color: '#ffffff' }, 
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Clock size={20} color="#9ca3af" />
-                            </InputAdornment>
-                          ) 
-                        }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            '&:hover': {
-                              borderColor: 'rgba(255, 255, 255, 0.2)',
-                            },
-                            '&.Mui-focused': {
-                              borderColor: '#667eea',
-                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                            },
-                          },
-                          '& .MuiInputBase-input': {
-                            color: '#ffffff',
-                            '&::placeholder': {
-                              color: '#9ca3af',
-                              opacity: 1,
-                            },
-                          },
-                        }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={6} md={3}>
-                      <FormControl fullWidth>
-                        <InputLabel sx={{ color: '#9ca3af' }}>Status</InputLabel>
-                        <StyledSelect
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          label="Estimated Duration"
+                          name="estimated_duration"
+                          value={createForm.estimated_duration}
+                          onChange={handleCreateChange}
                           fullWidth
-                          value={createForm.status}
-                          onChange={e => setCreateForm(f => ({ ...f, status: String(e.target.value) }))}
-                          label="Status"
+                          required
+                          placeholder="e.g., 2-3 months, 6 weeks"
+                          InputLabelProps={{ style: { color: '#9ca3af' } }}
+                          InputProps={{ 
+                            style: { color: '#ffffff' }, 
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Clock size={20} color="#9ca3af" />
+                              </InputAdornment>
+                            ) 
+                          }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
@@ -1804,145 +1775,229 @@ function ProjectsPage() {
                                 borderColor: '#667eea',
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
-                            },
-                            '& .MuiSelect-select': { color: '#ffffff' }
-                          }}
-                          MenuProps={{ 
-                            PaperProps: { 
-                              sx: { 
-                                background: 'rgba(30,30,30,0.95)', 
-                                color: '#fff',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px'
-                              } 
-                            } 
-                          }}
-                        >
-                          <MenuItem value="active" sx={{ color: '#fff' }}>Active</MenuItem>
-                          <MenuItem value="completed" sx={{ color: '#fff' }}>Completed</MenuItem>
-                          <MenuItem value="on_hold" sx={{ color: '#fff' }}>On Hold</MenuItem>
-                          <MenuItem value="cancelled" sx={{ color: '#fff' }}>Cancelled</MenuItem>
-                        </StyledSelect>
-                      </FormControl>
-                    </Grid>
-                    
-                    <Grid item xs={6} md={3}>
-                      <FormControl fullWidth>
-                        <InputLabel sx={{ color: '#9ca3af' }}>Difficulty Level</InputLabel>
-                        <StyledSelect
-                          fullWidth
-                          value={createForm.difficulty_level}
-                          onChange={e => setCreateForm(f => ({ ...f, difficulty_level: String(e.target.value) }))}
-                          label="Difficulty Level"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              borderRadius: '12px',
-                              '&:hover': {
-                                borderColor: 'rgba(255, 255, 255, 0.2)',
-                              },
-                              '&.Mui-focused': {
-                                borderColor: '#667eea',
-                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                              },
-                            },
-                            '& .MuiSelect-select': { color: '#ffffff' }
-                          }}
-                          MenuProps={{ 
-                            PaperProps: { 
-                              sx: { 
-                                background: 'rgba(30,30,30,0.95)', 
-                                color: '#fff',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px'
-                              } 
-                            } 
-                          }}
-                        >
-                          <MenuItem value="beginner" sx={{ color: '#fff' }}>Beginner</MenuItem>
-                          <MenuItem value="intermediate" sx={{ color: '#fff' }}>Intermediate</MenuItem>
-                          <MenuItem value="advanced" sx={{ color: '#fff' }}>Advanced</MenuItem>
-                          <MenuItem value="expert" sx={{ color: '#fff' }}>Expert</MenuItem>
-                        </StyledSelect>
-                      </FormControl>
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel sx={{ color: '#9ca3af' }}>Project Type</InputLabel>
-                        <StyledSelect
-                          fullWidth
-                          value={createForm.project_type}
-                          onChange={e => setCreateForm(f => ({ ...f, project_type: String(e.target.value) }))}
-                          label="Project Type"
-                          sx={{
-                            width: '100%',
-                            minWidth: '100%',
-                            '& .MuiOutlinedInput-root': {
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              borderRadius: '12px',
-                              width: '100%',
-                              minWidth: '100%',
-                              '&:hover': {
-                                borderColor: 'rgba(255, 255, 255, 0.2)',
-                              },
-                              '&.Mui-focused': {
-                                borderColor: '#667eea',
-                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                              },
-                            },
-                            '& .MuiSelect-select': { 
-                              color: '#ffffff',
-                              width: '100%',
-                              minWidth: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
                             },
                             '& .MuiInputBase-input': {
-                              width: '100%',
-                              minWidth: '100%',
-                            }
+                              color: '#ffffff',
+                              '&::placeholder': {
+                                color: '#9ca3af',
+                                opacity: 1,
+                              },
+                            },
                           }}
-                          MenuProps={{ 
-                            PaperProps: { 
-                              sx: { 
-                                background: 'rgba(30,30,30,0.95)', 
-                                color: '#fff',
+                        />
+                      </Grid>
+                      
+                      <Grid item xs={6} md={3}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#9ca3af' }}>Status</InputLabel>
+                          <StyledSelect
+                            fullWidth
+                            value={createForm.status}
+                            onChange={e => setCreateForm(f => ({ ...f, status: String(e.target.value) }))}
+                            label="Status"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px'
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiSelect-select': { color: '#ffffff' }
+                            }}
+                            MenuProps={{ 
+                              PaperProps: { 
+                                sx: { 
+                                  background: 'rgba(30,30,30,0.95)', 
+                                  color: '#fff',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '12px'
+                                } 
                               } 
-                            } 
-                          }}
-                        >
-                          <MenuItem value="full_stack" sx={{ color: '#fff' }}>Full Stack</MenuItem>
-                          <MenuItem value="frontend" sx={{ color: '#fff' }}>Frontend</MenuItem>
-                          <MenuItem value="backend" sx={{ color: '#fff' }}>Backend</MenuItem>
-                          <MenuItem value="mobile" sx={{ color: '#fff' }}>Mobile</MenuItem>
-                          <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
-                          <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
-                        </StyledSelect>
-                      </FormControl>
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel sx={{ color: '#9ca3af' }}>Domain</InputLabel>
-                        <StyledSelect
+                            }}
+                          >
+                            <MenuItem value="active" sx={{ color: '#fff' }}>Active</MenuItem>
+                            <MenuItem value="completed" sx={{ color: '#fff' }}>Completed</MenuItem>
+                            <MenuItem value="on_hold" sx={{ color: '#fff' }}>On Hold</MenuItem>
+                            <MenuItem value="cancelled" sx={{ color: '#fff' }}>Cancelled</MenuItem>
+                          </StyledSelect>
+                        </FormControl>
+                      </Grid>
+                      
+                      <Grid item xs={6} md={3}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#9ca3af' }}>Difficulty Level</InputLabel>
+                          <StyledSelect
+                            fullWidth
+                            value={createForm.difficulty_level}
+                            onChange={e => setCreateForm(f => ({ ...f, difficulty_level: String(e.target.value) }))}
+                            label="Difficulty Level"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiSelect-select': { color: '#ffffff' }
+                            }}
+                            MenuProps={{ 
+                              PaperProps: { 
+                                sx: { 
+                                  background: 'rgba(30,30,30,0.95)', 
+                                  color: '#fff',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '12px'
+                                } 
+                              } 
+                            }}
+                          >
+                            <MenuItem value="beginner" sx={{ color: '#fff' }}>Beginner</MenuItem>
+                            <MenuItem value="intermediate" sx={{ color: '#fff' }}>Intermediate</MenuItem>
+                            <MenuItem value="advanced" sx={{ color: '#fff' }}>Advanced</MenuItem>
+                            <MenuItem value="expert" sx={{ color: '#fff' }}>Expert</MenuItem>
+                          </StyledSelect>
+                        </FormControl>
+                      </Grid>
+                      
+                      <Grid item xs={12} md={8}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#9ca3af' }}>Project Type</InputLabel>
+                          <StyledSelect
+                            fullWidth
+                            value={createForm.project_type}
+                            onChange={e => setCreateForm(f => ({ ...f, project_type: String(e.target.value) }))}
+                            label="Project Type"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiSelect-select': { 
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                              }
+                            }}
+                            MenuProps={{ 
+                              PaperProps: { 
+                                sx: { 
+                                  background: 'rgba(30,30,30,0.95)', 
+                                  color: '#fff',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '12px'
+                                } 
+                              } 
+                            }}
+                          >
+                            <MenuItem value="full_stack" sx={{ color: '#fff' }}>Full Stack</MenuItem>
+                            <MenuItem value="frontend" sx={{ color: '#fff' }}>Frontend</MenuItem>
+                            <MenuItem value="backend" sx={{ color: '#fff' }}>Backend</MenuItem>
+                            <MenuItem value="mobile" sx={{ color: '#fff' }}>Mobile</MenuItem>
+                            <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
+                            <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
+                          </StyledSelect>
+                        </FormControl>
+                      </Grid>
+                      
+                      <Grid item xs={12} md={4}>
+                        <FormControl fullWidth>
+                          <InputLabel sx={{ color: '#9ca3af' }}>Domain</InputLabel>
+                          <StyledSelect
+                            fullWidth
+                            value={createForm.domain}
+                            onChange={e => setCreateForm(f => ({ ...f, domain: String(e.target.value) }))}
+                            label="Domain"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiSelect-select': { 
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                              }
+                            }}
+                            MenuProps={{ 
+                              PaperProps: { 
+                                sx: { 
+                                  background: 'rgba(30,30,30,0.95)', 
+                                  color: '#fff',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '12px'
+                                } 
+                              } 
+                            }}
+                          >
+                            <MenuItem value="web_development" sx={{ color: '#fff' }}>Web Development</MenuItem>
+                            <MenuItem value="mobile_development" sx={{ color: '#fff' }}>Mobile Development</MenuItem>
+                            <MenuItem value="backend_development" sx={{ color: '#fff' }}>Backend Development</MenuItem>
+                            <MenuItem value="data_science" sx={{ color: '#fff' }}>Data Science</MenuItem>
+                            <MenuItem value="machine_learning" sx={{ color: '#fff' }}>Machine Learning</MenuItem>
+                            <MenuItem value="ai_ml" sx={{ color: '#fff' }}>AI/ML</MenuItem>
+                            <MenuItem value="blockchain" sx={{ color: '#fff' }}>Blockchain</MenuItem>
+                            <MenuItem value="security" sx={{ color: '#fff' }}>Security</MenuItem>
+                            <MenuItem value="testing" sx={{ color: '#fff' }}>Testing</MenuItem>
+                            <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
+                            <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
+                            <MenuItem value="product" sx={{ color: '#fff' }}>Product</MenuItem>
+                            <MenuItem value="research" sx={{ color: '#fff' }}>Research</MenuItem>
+                            <MenuItem value="other" sx={{ color: '#fff' }}>Other</MenuItem>
+                          </StyledSelect>
+                        </FormControl>
+                      </Grid>
+                      
+                      <Grid item xs={6} md={3}>
+                        <TextField
+                          label="Team Size (Min)"
+                          name="team_size_min"
+                          type="number"
+                          value={createForm.team_size_min}
+                          onChange={handleCreateChange}
                           fullWidth
-                          value={createForm.domain}
-                          onChange={e => setCreateForm(f => ({ ...f, domain: String(e.target.value) }))}
-                          label="Domain"
+                          required
+                          InputLabelProps={{ style: { color: '#9ca3af' } }}
+                          InputProps={{ 
+                            style: { color: '#ffffff' }, 
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Users size={20} color="#9ca3af" />
+                              </InputAdornment>
+                            ) 
+                          }}
                           sx={{
-                            width: '100%',
-                            minWidth: '100%',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
-                              width: '100%',
-                              minWidth: '100%',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -1951,124 +2006,52 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
                             },
-                            '& .MuiSelect-select': { 
+                            '& .MuiInputBase-input': {
                               color: '#ffffff',
-                              width: '100%',
-                              minWidth: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
+                            },
+                          }}
+                        />
+                      </Grid>
+                      
+                      <Grid item xs={6} md={3}>
+                        <TextField
+                          label="Team Size (Max)"
+                          name="team_size_max"
+                          type="number"
+                          value={createForm.team_size_max}
+                          onChange={handleCreateChange}
+                          fullWidth
+                          required
+                          InputLabelProps={{ style: { color: '#9ca3af' } }}
+                          InputProps={{ 
+                            style: { color: '#ffffff' }, 
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Users size={20} color="#9ca3af" />
+                              </InputAdornment>
+                            ) 
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
                             },
                             '& .MuiInputBase-input': {
-                              width: '100%',
-                              minWidth: '100%',
-                            }
+                              color: '#ffffff',
+                            },
                           }}
-                          MenuProps={{ 
-                            PaperProps: { 
-                              sx: { 
-                                background: 'rgba(30,30,30,0.95)', 
-                                color: '#fff',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px'
-                              } 
-                            } 
-                          }}
-                        >
-                          <MenuItem value="web_development" sx={{ color: '#fff' }}>Web Development</MenuItem>
-                          <MenuItem value="mobile_development" sx={{ color: '#fff' }}>Mobile Development</MenuItem>
-                          <MenuItem value="backend_development" sx={{ color: '#fff' }}>Backend Development</MenuItem>
-                          <MenuItem value="data_science" sx={{ color: '#fff' }}>Data Science</MenuItem>
-                          <MenuItem value="machine_learning" sx={{ color: '#fff' }}>Machine Learning</MenuItem>
-                          <MenuItem value="ai_ml" sx={{ color: '#fff' }}>AI/ML</MenuItem>
-                          <MenuItem value="blockchain" sx={{ color: '#fff' }}>Blockchain</MenuItem>
-                          <MenuItem value="security" sx={{ color: '#fff' }}>Security</MenuItem>
-                          <MenuItem value="testing" sx={{ color: '#fff' }}>Testing</MenuItem>
-                          <MenuItem value="devops" sx={{ color: '#fff' }}>DevOps</MenuItem>
-                          <MenuItem value="design" sx={{ color: '#fff' }}>Design</MenuItem>
-                          <MenuItem value="product" sx={{ color: '#fff' }}>Product</MenuItem>
-                          <MenuItem value="research" sx={{ color: '#fff' }}>Research</MenuItem>
-                          <MenuItem value="other" sx={{ color: '#fff' }}>Other</MenuItem>
-                        </StyledSelect>
-                      </FormControl>
+                        />
+                      </Grid>
                     </Grid>
-                    
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        label="Team Size (Min)"
-                        name="team_size_min"
-                        type="number"
-                        value={createForm.team_size_min}
-                        onChange={handleCreateChange}
-                        fullWidth
-                        required
-                        InputLabelProps={{ style: { color: '#9ca3af' } }}
-                        InputProps={{ 
-                          style: { color: '#ffffff' }, 
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Users size={20} color="#9ca3af" />
-                            </InputAdornment>
-                          ) 
-                        }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            '&:hover': {
-                              borderColor: 'rgba(255, 255, 255, 0.2)',
-                            },
-                            '&.Mui-focused': {
-                              borderColor: '#667eea',
-                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                            },
-                          },
-                          '& .MuiInputBase-input': {
-                            color: '#ffffff',
-                          },
-                        }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        label="Team Size (Max)"
-                        name="team_size_max"
-                        type="number"
-                        value={createForm.team_size_max}
-                        onChange={handleCreateChange}
-                        fullWidth
-                        required
-                        InputLabelProps={{ style: { color: '#9ca3af' } }}
-                        InputProps={{ 
-                          style: { color: '#ffffff' }, 
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Users size={20} color="#9ca3af" />
-                            </InputAdornment>
-                          ) 
-                        }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            '&:hover': {
-                              borderColor: 'rgba(255, 255, 255, 0.2)',
-                            },
-                            '&.Mui-focused': {
-                              borderColor: '#667eea',
-                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                            },
-                          },
-                          '& .MuiInputBase-input': {
-                            color: '#ffffff',
-                          },
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-              </Box>
+                </Box>
 
                 {/* Skills & Technologies Section */}
                 <Box sx={{ mb: 4 }}>
