@@ -26,7 +26,7 @@ export default function Dashboard() {
         const userStr = localStorage.getItem("user");
         if (!userStr) return;
         const user = JSON.parse(userStr);
-        const res = await fetch(${import.meta.env.VITE_API_KEY}/feed/${user.id});
+        const res = await fetch(`${import.meta.env.VITE_API_KEY}/feed/${user.id}`);
         const data = await res.json();
         setPosts(data);
       } catch (err) {
@@ -41,7 +41,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div>
+    <>
       <NavBar />
       <Box sx={{ px: 3, py: 2 }}>
         <Typography variant="h4" sx={{ color: marshGreen, mb: 2 }}>
@@ -61,7 +61,7 @@ export default function Dashboard() {
                 backgroundColor: "#111",
                 color: "white",
                 mb: 2,
-                border: 1px solid ${marshGreen},
+                border: `1px solid ${marshGreen}`,
               }}
             >
               <CardContent>
@@ -92,6 +92,6 @@ export default function Dashboard() {
 
       <InlineChatbox />
       <ChatWidget />
-    </div>
+    </>
   );
 }

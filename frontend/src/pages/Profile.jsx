@@ -35,7 +35,7 @@ export default function Profile() {
       const user = JSON.parse(userStr);
 
       try {
-        const res = await fetch(${import.meta.env.VITE_API_KEY}/api/profile/${user.id});
+        const res = await fetch(`${import.meta.env.VITE_API_KEY}/api/profile/${user.id}`);
         const data = await res.json();
         setProfile({
           ...data,
@@ -57,7 +57,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(${import.meta.env.VITE_API_KEY}/api/profile/update, {
+      const res = await fetch(`${import.meta.env.VITE_API_KEY}/api/profile/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...profile, id: user.id, email: user.email }),
@@ -134,7 +134,7 @@ export default function Profile() {
       <Box
         sx={{
           backgroundColor: "#111",
-          border: 2px solid ${marshGreen},
+          border: `2px solid ${marshGreen}`,
           borderRadius: 4,
           p: 3,
         }}
@@ -233,7 +233,7 @@ export default function Profile() {
                 sx={{
                   bgcolor: editing ? "#222" : marshGreen,
                   color: editing ? "white" : "#000",
-                  border: editing ? 1px solid ${marshGreen} : "none",
+                  border: editing ? `1px solid ${marshGreen}` : "none",
                 }}
                 deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
@@ -268,7 +268,7 @@ export default function Profile() {
                 sx={{
                   bgcolor: editing ? "#222" : "#333",
                   color: "white",
-                  border: 1px solid ${marshGreen},
+                  border: `1px solid ${marshGreen}`,
                 }}
                 deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
@@ -280,7 +280,7 @@ export default function Profile() {
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle1" sx={{ color: marshGreen }}>Links</Typography>
           {["github", "linkedin", "stackoverflow", "website"].map((key) => {
-            const url = profile[${key}_url];
+            const url = profile[`${key}_url`];
             return (
               url && (
                 <Typography key={key} sx={{ color: "white", mt: 1 }}>
