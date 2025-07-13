@@ -4,7 +4,7 @@
  * Includes endpoints for messages, conversations, and group management
  */
 
-const API_BASE_URL = 'http://localhost:8000/api'; // Backend API base URL
+const API_BASE_URL = `${import.meta.env.VITE_API_KEY}/api`; // Backend API base URL
 
 // Mock API responses for development
 const MOCK_MODE = true; // Set to false when backend is ready

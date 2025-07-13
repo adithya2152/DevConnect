@@ -18,6 +18,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 const marshGreen = "#0e6672ff";
 
+import toast from "react-hot-toast";
+
 export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -74,22 +76,96 @@ export default function Profile() {
     }
   };
 
+<<<<<<< HEAD
   const handleSkillAdd = () => {
     if (skillInput && !profile.skills.includes(skillInput.trim())) {
       setProfile({ ...profile, skills: [...profile.skills, skillInput.trim()] });
+=======
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      alert("You must be logged in");
+      setLoading(false);
+      return;
+    }
+    const user = JSON.parse(userStr);
+
+    const updates = {
+      ...profile,
+      id: user.id,
+      email: user.email,
+      updated_at: new Date(),
+    };
+
+    const { error } = await supabase.from("profiles").upsert(updates);
+
+    if (error) {
+      toast.error("Error saving profile");
+      console.error("Error saving profile:", error.message);
+    } else {
+      toast.success("Profile saved successfully!");
+    }
+
+    setLoading(false);
+  };
+
+  const handleSkillAdd = () => {
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !profile.skills.includes(trimmedSkill)) {
+      setProfile({
+        ...profile,
+        skills: [...profile.skills, trimmedSkill],
+      });
+>>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
       setSkillInput("");
+      toast.success("Skill added!");
+    } else if (profile.skills.includes(trimmedSkill)) {
+      toast.error("Skill already exists!");
     }
   };
 
+<<<<<<< HEAD
   const handleProjectAdd = () => {
     if (projectInput && !profile.projects.includes(projectInput.trim())) {
       setProfile({ ...profile, projects: [...profile.projects, projectInput.trim()] });
+=======
+  const handleSkillDelete = (skill) => {
+    setProfile({
+      ...profile,
+      skills: profile.skills.filter((s) => s !== skill),
+    });
+    toast.success("Skill removed!");
+  };
+
+  const handleProjectAdd = () => {
+    const trimmedProject = projectInput.trim();
+    if (trimmedProject && !profile.projects.includes(trimmedProject)) {
+      setProfile({
+        ...profile,
+        projects: [...profile.projects, trimmedProject],
+      });
+>>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
       setProjectInput("");
+      toast.success("Project added!");
+    } else if (profile.projects.includes(trimmedProject)) {
+      toast.error("Project already exists!");
     }
   };
 
+<<<<<<< HEAD
   const handleSkillDelete = (skill) => {
     setProfile({ ...profile, skills: profile.skills.filter((s) => s !== skill) });
+=======
+  const handleProjectDelete = (project) => {
+    setProfile({
+      ...profile,
+      projects: profile.projects.filter((p) => p !== project),
+    });
+    toast.success("Project removed!");
+>>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
   };
 
   const handleProjectDelete = (project) => {
@@ -98,9 +174,17 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <Box sx={{ mt: 4, textAlign: "center" }}>
+      <Box sx={{ 
+        mt: 4, 
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "50vh"
+      }}>
+        <CircularProgress size={60} sx={{ mb: 2 }} />
         <Typography sx={{ color: "white" }}>Loading profile...</Typography>
-        <CircularProgress />
       </Box>
     );
   }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
 import NavBar from "../components/nav";
 import useAuthGuard from "../hooks/useAuthGuarf";
@@ -40,6 +41,47 @@ export default function Dashboard() {
     fetchFeed();
   }, []);
 
+=======
+import { useState, useEffect } from "react";
+import { CircularProgress, Box } from "@mui/material";
+import NavBar from "../components/nav";
+import useAuthGuard from "../hooks/useAuthGuarf";
+import ChatWidget from '../components/chat/Chatbot';
+import InlineChatbox from '../components/chat/InlineChatbox';
+import { Typography, Container } from '@mui/material';
+
+export default function Dashboard() {
+  useAuthGuard();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading time for dashboard initialization
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <>
+        <NavBar />
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          height: "calc(100vh - 64px)",
+          background: "linear-gradient(to bottom right, #0f2027, #203a43, #2c5364)",
+          color: "white"
+        }}>
+          <CircularProgress size={60} />
+        </Box>
+      </>
+    );
+  }
+
+>>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
   return (
     <div>
       <NavBar />

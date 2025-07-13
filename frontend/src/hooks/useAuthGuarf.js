@@ -26,7 +26,7 @@ const useAuthGuard = () => {
       }
 
       // Optional: ping backend to verify token server-side
-      fetch("http://localhost:8000/api/protected", {
+      fetch(`${import.meta.env.VITE_API_KEY}/api/protected`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -35,9 +35,12 @@ import { useNavigate } from "react-router-dom";
 import NavBar from "../components/nav";
 import useAuthGuard from "../hooks/useAuthGuarf";
 
+import { CircularProgress } from "@mui/material";
+
 export default function Communities() {
   useAuthGuard();
   const navigate = useNavigate();
+  const [pageLoading, setPageLoading] = useState(true);
   const [tab, setTab] = useState(0);
   const [search, setSearch] = useState("");
   const [explore, setExplore] = useState([]);
@@ -54,14 +57,15 @@ export default function Communities() {
 
   const fetchCommunities = async () => {
     try {
+      setPageLoading(true);
       const [exploreRes, joinedRes, hostedRes] = await Promise.all([
-        axios.get(`${BASE}/communities/explore`, {
+        axios.get(`${import.meta.env.VITE_API_KEY}/communities/explore`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         }),
-        axios.get(`${BASE}/communities/joined`, {
+        axios.get(`${import.meta.env.VITE_API_KEY}/communities/joined`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         }),
-        axios.get(`${BASE}/communities/hosted`, {
+        axios.get(`${import.meta.env.VITE_API_KEY}/communities/hosted`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         }),
       ]);
@@ -83,13 +87,15 @@ export default function Communities() {
     } catch (err) {
       toast.error("Failed to load communities");
       console.error("Community fetch error:", err);
+    } finally {
+      setPageLoading(false);
     }
   };
 
   const handleJoin = async (id) => {
     try {
       const response = await axios.post(
-        `${BASE}/communities/join`,
+        `${import.meta.env.VITE_API_KEY}/communities/join`,
         { community_id: id },
         {
           headers: {
@@ -112,7 +118,7 @@ export default function Communities() {
   const handleCreate = async () => {
     try {
       const response = await axios.post(
-        `${BASE}/communities/add`,
+        `${import.meta.env.VITE_API_KEY}/communities/add`,
         create,
         {
           headers: {
@@ -139,30 +145,48 @@ export default function Communities() {
     toast.success(isPrivate ? "Private invite link copied!" : "Community link copied!");
   };
 
+  if (pageLoading) {
+    return (
+      <>
+        <NavBar />
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          height: "calc(100vh - 64px)",
+          background: "linear-gradient(to bottom right, #0f2027, #203a43, #2c5364)",
+          color: "white"
+        }}>
+          <CircularProgress size={60} />
+        </Box>
+      </>
+    );
+  }
+
   const CommunityCard = ({ comm, isJoined }) => {
     const isHost = comm.room_admin_id === userID;
     const isMember = isJoined || isHost;
 
     return (
       <Card
-        sx={{
-          bgcolor: "rgba(255, 255, 255, 0.08)",
-          color: "#ffffff",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          transition: "transform 0.2s, box-shadow 0.2s",
-          "&:hover": {
-            transform: "translateY(-4px)",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
-          },
-          border: isHost
-            ? "1px solid #4e46e5"
-            : isMember
-            ? "1px solid #3b82f6"
-            : "1px solid rgba(255, 255, 255, 0.12)",
-        }}
-      >
+      sx={{
+        bgcolor: "rgba(255, 255, 255, 0.08)",
+        color: "#ffffff",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        transition: "transform 0.2s, box-shadow 0.2s",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+        },
+        border: isHost
+          ? "1px solid #4e46e5"
+          : isMember
+          ? "1px solid #3b82f6"
+          : "1px solid rgba(255, 255, 255, 0.12)",
+      }}
+    >
         <CardContent sx={{ flexGrow: 1 }}>
           <Box display="flex" justifyContent="space-between" alignItems="flex-start">
             <Box>
@@ -235,17 +259,19 @@ export default function Communities() {
         </CardContent>
 
         <CardActions
-          sx={{
-            justifyContent: "space-between",
-            borderTop: "1px solid",
-            borderColor: "rgba(255, 255, 255, 0.12)",
-            pt: 1,
-            pb: 1.5,
-            px: 2,
-          }}
-        >
-          <Box>
-            {isHost ? (
+        sx={{
+          justifyContent: "space-between",
+          borderTop: "1px solid",
+          borderColor: "rgba(255, 255, 255, 0.12)",
+          pt: 1,
+          pb: 1.5,
+          px: 2,
+          gap: 1, // Add gap between buttons
+        }}
+      >
+        <Box display="flex" gap={1}>
+          {isHost ? (
+            <>
               <Button
                 size="small"
                 variant="contained"
@@ -263,7 +289,6 @@ export default function Communities() {
               >
                 Manage
               </Button>
-            ) : isMember ? (
               <Button
                 size="small"
                 variant="contained"
@@ -280,45 +305,65 @@ export default function Communities() {
                 onClick={() => navigate(`/communities/chat/${comm.id}`)}
                 startIcon={<ChatIcon fontSize="small" />}
               >
-                Enter Chat
+                Chat
               </Button>
-            ) : (
-              <Button
-                size="small"
-                variant="contained"
-                sx={{
-                  fontWeight: 600,
-                  px: 2,
-                  py: 0.5,
-                  fontSize: "0.75rem",
-                  backgroundColor: "#10b981",
-                  "&:hover": {
-                    backgroundColor: "#059669",
-                  },
-                }}
-                onClick={() => setDialog({ open: true, community: comm })}
-              >
-                Join Now
-              </Button>
-            )}
-          </Box>
-
-          <Tooltip title={isHost ? "Copy invite link" : "Copy community link"}>
-            <IconButton
-              onClick={() => copyJoinLink(comm.id, comm.is_private)}
+            </>
+          ) : isMember ? (
+            <Button
               size="small"
+              variant="contained"
               sx={{
-                color: "rgba(255, 255, 255, 0.7)",
+                fontWeight: 600,
+                px: 2,
+                py: 0.5,
+                fontSize: "0.75rem",
+                backgroundColor: "#3b82f6",
                 "&:hover": {
-                  color: "#ffffff",
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "#2563eb",
                 },
               }}
+              onClick={() => navigate(`/communities/chat/${comm.id}`)}
+              startIcon={<ChatIcon fontSize="small" />}
             >
-              <ShareIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </CardActions>
+              Enter Chat
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              variant="contained"
+              sx={{
+                fontWeight: 600,
+                px: 2,
+                py: 0.5,
+                fontSize: "0.75rem",
+                backgroundColor: "#10b981",
+                "&:hover": {
+                  backgroundColor: "#059669",
+                },
+              }}
+              onClick={() => setDialog({ open: true, community: comm })}
+            >
+              Join Now
+            </Button>
+          )}
+        </Box>
+
+        <Tooltip title={isHost ? "Copy invite link" : "Copy community link"}>
+          <IconButton
+            onClick={() => copyJoinLink(comm.id, comm.is_private)}
+            size="small"
+            sx={{
+              color: "rgba(255, 255, 255, 0.7)",
+              "&:hover": {
+                color: "#ffffff",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
+            }}
+          >
+            <ShareIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </CardActions>
       </Card>
     );
   };
@@ -781,7 +826,7 @@ export default function Communities() {
             Cancel
           </Button>
           <Button
-            onClick={() => alert("REQ BASED JOIN COMMING SOON)")}
+            onClick={() => handleJoin(dialog.community?.id)}
             autoFocus
             variant="contained"
             sx={{

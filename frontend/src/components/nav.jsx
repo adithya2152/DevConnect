@@ -76,7 +76,7 @@ export default function NavBar() {
         return;
       }
 
-      const res = await axios.get("http://localhost:8000/notifications", {
+      const res = await axios.get(`${import.meta.env.VITE_API_KEY}/notifications`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -117,7 +117,7 @@ export default function NavBar() {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setUnreadCount(0);
     const res = await axios.patch(
-      "http://localhost:8000/notifications/mark-all-read",
+      `${import.meta.env.VITE_API_KEY}/notifications/mark-all-read`,
       {},
       {
         headers: {
@@ -139,7 +139,7 @@ export default function NavBar() {
       // Mark as read if unread
       if (!notification.is_read) {
         await axios.patch(
-          `http://localhost:8000/notifications/${notification.id}/read`,
+          `${import.meta.env.VITE_API_KEY}/notifications/${notification.id}/read`,
           {},
           {
             headers: {
@@ -188,7 +188,7 @@ export default function NavBar() {
     try {
       setLogoutLoading(true);
       const res = await axios.post(
-        "http://localhost:8000/logout",
+        `${import.meta.env.VITE_API_KEY}/logout`,
         {},
         {
           headers: {
@@ -233,12 +233,12 @@ export default function NavBar() {
     try {
       setSearchLoading(true);
       const [devRes, projectRes] = await Promise.all([
-        axios.get(`http://localhost:8000/search/devs?q=${query}`, {
+        axios.get(`${import.meta.env.VITE_API_KEY}/search/devs?q=${query}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
         }),
-        axios.get(`http://localhost:8000/search/projects?q=${query}`, {
+        axios.get(`${import.meta.env.VITE_API_KEY}/search/projects?q=${query}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
@@ -260,7 +260,7 @@ export default function NavBar() {
   const handleMessage = async (userId, userProfile) => {
     try {
       const response = await axios.post(
-        "http://localhost:8000/chat/create-room",
+        `${import.meta.env.VITE_API_KEY}/chat/create-room`,
         { other_user_id: userId },
         {
           headers: {

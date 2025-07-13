@@ -15,6 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Visibility, VisibilityOff, CloudUpload, CheckCircle } from '@mui/icons-material';
+import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ export default function Register() {
     setIsSubmitting(true);
     
     const response = await axios.post(
-      'http://localhost:8000/send-otp',
+      `${import.meta.env.VITE_API_KEY}/send-otp`,
       { email: formData.email },
       {
         headers: {
@@ -76,10 +77,12 @@ export default function Register() {
     if (response.status === 200) {
       setOtpSent(true);
       setStep(2);
+      toast.success('OTP sent successfully!');
     }
   } catch (error) {
     console.error("OTP sending failed:", error);
-    alert(error.response?.data?.detail || 'Failed to send OTP. Please try again.');
+    const errorMessage = error.response?.data?.detail || 'Failed to send OTP. Please try again.';
+    toast.error(errorMessage);
   } finally {
     setIsSubmitting(false);
   }
@@ -95,7 +98,7 @@ export default function Register() {
     setIsSubmitting(true);
     
     const response = await axios.post(
-      'http://localhost:8000/verify-otp',
+      `${import.meta.env.VITE_API_KEY}/verify-otp`,
       {
         email: formData.email,  // Include email
         otp: otp
@@ -110,12 +113,13 @@ export default function Register() {
 
     if (response.data.success) {
       setStep(3); // Only proceed if verification succeeds
+      toast.success('OTP verified successfully!');
     } else {
-      alert(response.data.message || 'OTP verification failed');
+      toast.error(response.data.message || 'OTP verification failed');
     }
   } catch (error) {
     console.error("OTP verification error:", error);
-    alert(error.response?.data?.detail || 'Error verifying OTP. Please try again.');
+    toast.error(error.response?.data?.detail || 'Error verifying OTP. Please try again.');
   } finally {
     setIsSubmitting(false);
   }
@@ -134,7 +138,7 @@ export default function Register() {
 
   try {
     const response = await axios.post(
-      'http://localhost:8000/register',
+      `${import.meta.env.VITE_API_KEY}/register`,
       {
         email: formData.email,
         password: formData.password
@@ -151,14 +155,16 @@ export default function Register() {
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      toast.success('Registration successful!');
       navigate('/dashboard');
     }
   } catch (error) {
     console.error("Registration error:", error);
-    setError(
+    const errorMessage = 
       error.response?.data?.detail || 
-      'Registration failed. Please try again.'
-    );
+      'Registration failed. Please try again.';
+    setError(errorMessage);
+    toast.error(errorMessage);
   } finally {
     setIsSubmitting(false);
   }

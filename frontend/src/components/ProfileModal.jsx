@@ -41,7 +41,7 @@ export default function ProfileModal({ open, onClose, userId, onMessage }) {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:8000/chat/profile/${userId}/detailed`,
+        `${import.meta.env.VITE_API_KEY}/chat/profile/${userId}/detailed`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('access_token')}`
@@ -63,7 +63,7 @@ export default function ProfileModal({ open, onClose, userId, onMessage }) {
       const endpoint = profile.is_following ? '/chat/unfollow' : '/chat/follow';
       
       await axios.post(
-        `http://localhost:8000${endpoint}`,
+        `${import.meta.env.VITE_API_KEY}${endpoint}`,
         { user_id: userId },
         {
           headers: {

@@ -20,8 +20,11 @@ import toast, { Toaster } from "react-hot-toast";
 import useAuthGuard from "../hooks/useAuthGuarf";
 import { format } from "date-fns";
 
+import { CircularProgress } from "@mui/material";
+
 export default function ChatPage() {
   useAuthGuard();
+  const [pageLoading, setPageLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
   const [conversations, setConversations] = useState([]);
@@ -48,8 +51,9 @@ export default function ChatPage() {
     
     const fetchConv = async () => {
       try {
+        setPageLoading(true);
         const res = await axios.get(
-          "http://localhost:8000/chat/conversations",
+          `${import.meta.env.VITE_API_KEY}/chat/conversations`,
           {
             withCredentials: true,
             headers: {
@@ -72,6 +76,8 @@ export default function ChatPage() {
         console.error(error);
         setStatusMessage("Failed to fetch conversations.");
         toast.error("❌ Could not fetch conversations");
+      } finally {
+        setPageLoading(false);
       }
     };
 
@@ -80,7 +86,8 @@ export default function ChatPage() {
     if (!selectedDev) return;
 
     const token = localStorage.getItem("access_token");
-    const ws = new WebSocket(`ws://localhost:8000/ws/${selectedDev.room_id}?token=${token}`);
+    const wsUrl = import.meta.env.VITE_API_KEY.replace('https://', 'wss://').replace('http://', 'ws://');
+    const ws = new WebSocket(`${wsUrl}/ws/${selectedDev.room_id}?token=${token}`);
 
     ws.onopen = () => {
       console.log("✅ WebSocket connection opened");
@@ -116,7 +123,7 @@ export default function ChatPage() {
 
       try {
         const res = await axios.get(
-          `http://localhost:8000/chat/rooms/${selectedDev.room_id}/messages`,
+          `${import.meta.env.VITE_API_KEY}/chat/rooms/${selectedDev.room_id}/messages`,
           {
             withCredentials: true,
             headers: {
@@ -167,6 +174,24 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, localMsg]);
     setNewMessage("");
   };
+
+  if (pageLoading) {
+    return (
+      <>
+        <NavBar />
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          height: "calc(100vh - 64px)",
+          bgcolor: "#111827",
+          color: "white"
+        }}>
+          <CircularProgress size={60} />
+        </Box>
+      </>
+    );
+  }
 
   return (
     <>
