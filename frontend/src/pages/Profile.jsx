@@ -1,144 +1,100 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
 import {
   Box,
-  TextField,
-  Button,
   Typography,
-  CircularProgress,
+  Avatar,
   Chip,
+  TextField,
+  IconButton,
+  Button,
+  CircularProgress,
+  Divider,
+  Link,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+
+const marshGreen = "#0e6672ff";
 
 export default function Profile() {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState({
-    username: "",
-    full_name: "",
-    bio: "",
-    location: "",
-    skills: [],
-    projects: [],        // <-- projects as array
-    github_url: "",
-    linkedin_url: "",
-    stackoverflow_url: "",
-    website_url: "",
-  });
+  const [editing, setEditing] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [skillInput, setSkillInput] = useState("");
   const [projectInput, setProjectInput] = useState("");
 
-  const fetchProfile = async () => {
-    setLoading(true);
-    try {
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
       const userStr = localStorage.getItem("user");
-      if (!userStr) {
-        setLoading(false);
-        return;
-      }
+      if (!userStr) return;
       const user = JSON.parse(userStr);
-      const userEmail = user.email;
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("email", userEmail)
-        .single();
-
-      if (error && error.code === "PGRST116") {
-        // no profile yet, empty state
-        setProfile({
-          username: "",
-          full_name: "",
-          bio: "",
-          location: "",
-          skills: [],
-          projects: [],
-          github_url: "",
-          linkedin_url: "",
-          stackoverflow_url: "",
-          website_url: "",
-        });
-      } else if (data) {
+      try {
+        const res = await fetch(`http://localhost:8000/api/profile/${user.id}`);
+        const data = await res.json();
         setProfile({
           ...data,
           skills: data.skills || [],
           projects: data.projects || [],
         });
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/profile/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...profile, id: user.id, email: user.email }),
+      });
+
+      if (res.ok) {
+        alert("Profile updated!");
+        setEditing(false);
+      } else {
+        alert("Failed to update profile.");
       }
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("Error saving:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      alert("You must be logged in");
-      setLoading(false);
-      return;
-    }
-    const user = JSON.parse(userStr);
-
-    const updates = {
-      ...profile,
-      id: user.id,
-      email: user.email,
-      updated_at: new Date(),
-    };
-
-    const { error } = await supabase.from("profiles").upsert(updates);
-
-    if (error) {
-      alert("Error saving profile, check console");
-      console.error("Error saving profile:", error.message);
-    } else {
-      alert("Profile saved!");
-    }
-
-    setLoading(false);
-  };
-
   const handleSkillAdd = () => {
     if (skillInput && !profile.skills.includes(skillInput.trim())) {
-      setProfile({
-        ...profile,
-        skills: [...profile.skills, skillInput.trim()],
-      });
+      setProfile({ ...profile, skills: [...profile.skills, skillInput.trim()] });
       setSkillInput("");
     }
   };
 
-  const handleSkillDelete = (skill) => {
-    setProfile({
-      ...profile,
-      skills: profile.skills.filter((s) => s !== skill),
-    });
-  };
-
   const handleProjectAdd = () => {
     if (projectInput && !profile.projects.includes(projectInput.trim())) {
-      setProfile({
-        ...profile,
-        projects: [...profile.projects, projectInput.trim()],
-      });
+      setProfile({ ...profile, projects: [...profile.projects, projectInput.trim()] });
       setProjectInput("");
     }
   };
 
-  const handleProjectDelete = (project) => {
-    setProfile({
-      ...profile,
-      projects: profile.projects.filter((p) => p !== project),
-    });
+  const handleSkillDelete = (skill) => {
+    setProfile({ ...profile, skills: profile.skills.filter((s) => s !== skill) });
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  const handleProjectDelete = (project) => {
+    setProfile({ ...profile, projects: profile.projects.filter((p) => p !== project) });
+  };
 
   if (loading) {
     return (
@@ -149,164 +105,179 @@ export default function Profile() {
     );
   }
 
+  if (!profile) {
+    return (
+      <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Typography sx={{ color: "white" }}>No profile found.</Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", mt: 5 }}>
-      <Typography variant="h5" gutterBottom sx={{ color: "white" }}>
-        Your Profile
-      </Typography>
-      <form onSubmit={handleSubmit}>
-        {/* Username */}
-        <TextField
-          label="Username"
-          fullWidth
-          margin="normal"
-          value={profile.username}
-          onChange={(e) =>
-            setProfile({ ...profile, username: e.target.value })
-          }
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
+    <Box sx={{ maxWidth: 800, mx: "auto", mt: 5 }}>
+      <Box
+        sx={{
+          backgroundColor: "#111",
+          border: `2px solid ${marshGreen}`,
+          borderRadius: 4,
+          p: 3,
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", gap: 3 }}>
+            <Avatar sx={{ width: 80, height: 80, bgcolor: marshGreen, color: "#000", fontSize: 32 }}>
+              {profile.full_name?.[0] || "U"}
+            </Avatar>
+            <Box>
+              {editing ? (
+                <>
+                  <TextField
+                    label="Full Name"
+                    value={profile.full_name}
+                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    size="small"
+                    fullWidth
+                    sx={{ mb: 1, input: { color: "white" }, label: { color: marshGreen } }}
+                  />
+                  <TextField
+                    label="Username"
+                    value={profile.username}
+                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                    size="small"
+                    fullWidth
+                    sx={{ input: { color: "white" }, label: { color: marshGreen } }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Typography variant="h5" color="white">{profile.full_name}</Typography>
+                  <Typography variant="subtitle1" color="gray">@{profile.username}</Typography>
+                </>
+              )}
+            </Box>
+          </Box>
 
-        {/* Full Name */}
-        <TextField
-          label="Full Name"
-          fullWidth
-          margin="normal"
-          value={profile.full_name}
-          onChange={(e) =>
-            setProfile({ ...profile, full_name: e.target.value })
-          }
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
+          <IconButton onClick={() => (editing ? handleSave() : setEditing(true))} sx={{ color: marshGreen }}>
+            {editing ? <SaveIcon /> : <EditIcon />}
+          </IconButton>
+        </Box>
 
-        {/* Bio */}
-        <TextField
-          label="Bio"
-          fullWidth
-          multiline
-          rows={3}
-          margin="normal"
-          value={profile.bio}
-          onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
+        <Divider sx={{ my: 2, borderColor: marshGreen }} />
 
-        {/* Location */}
-        <TextField
-          label="Location"
-          fullWidth
-          margin="normal"
-          value={profile.location}
-          onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
+        {/* Bio & Location */}
+        {editing ? (
+          <>
+            <TextField
+              label="Bio"
+              value={profile.bio}
+              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              fullWidth multiline rows={3}
+              sx={{ mb: 2, input: { color: "white" }, label: { color: marshGreen } }}
+            />
+            <TextField
+              label="Location"
+              value={profile.location}
+              onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+              fullWidth
+              sx={{ input: { color: "white" }, label: { color: marshGreen } }}
+            />
+          </>
+        ) : (
+          <>
+            {profile.bio && <Typography sx={{ color: "#ccc", mb: 1 }}>{profile.bio}</Typography>}
+            {profile.location && <Typography sx={{ color: "white" }}>📍 {profile.location}</Typography>}
+          </>
+        )}
 
         {/* Skills */}
-        <Box sx={{ my: 2 }}>
-          <Typography sx={{ color: "white", mb: 1 }}>Skills</Typography>
-          <TextField
-            label="Add Skill"
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSkillAdd();
-              }
-            }}
-            fullWidth
-            InputLabelProps={{ style: { color: "white" } }}
-            InputProps={{ style: { color: "white" } }}
-          />
-          <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <Box sx={{ my: 3 }}>
+          <Typography variant="subtitle1" sx={{ color: marshGreen, mb: 1 }}>Skills</Typography>
+          {editing && (
+            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+              <TextField
+                size="small"
+                label="Add Skill"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSkillAdd()}
+                sx={{ input: { color: "white" }, label: { color: marshGreen } }}
+              />
+              <IconButton onClick={handleSkillAdd} sx={{ color: marshGreen }}>
+                <AddIcon />
+              </IconButton>
+            </Box>
+          )}
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {profile.skills.map((skill, i) => (
               <Chip
                 key={i}
                 label={skill}
-                onDelete={() => handleSkillDelete(skill)}
+                onDelete={editing ? () => handleSkillDelete(skill) : undefined}
+                sx={{
+                  bgcolor: editing ? "#222" : marshGreen,
+                  color: editing ? "white" : "#000",
+                  border: editing ? `1px solid ${marshGreen}` : "none",
+                }}
+                deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
             ))}
           </Box>
         </Box>
 
         {/* Projects */}
-        <Box sx={{ my: 2 }}>
-          <Typography sx={{ color: "white", mb: 1 }}>Projects</Typography>
-          <TextField
-            label="Add Project"
-            value={projectInput}
-            onChange={(e) => setProjectInput(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleProjectAdd();
-              }
-            }}
-            fullWidth
-            InputLabelProps={{ style: { color: "white" } }}
-            InputProps={{ style: { color: "white" } }}
-          />
-          <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <Box sx={{ my: 3 }}>
+          <Typography variant="subtitle1" sx={{ color: marshGreen, mb: 1 }}>Projects</Typography>
+          {editing && (
+            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+              <TextField
+                size="small"
+                label="Add Project"
+                value={projectInput}
+                onChange={(e) => setProjectInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleProjectAdd()}
+                sx={{ input: { color: "white" }, label: { color: marshGreen } }}
+              />
+              <IconButton onClick={handleProjectAdd} sx={{ color: marshGreen }}>
+                <AddIcon />
+              </IconButton>
+            </Box>
+          )}
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {profile.projects.map((project, i) => (
               <Chip
                 key={i}
                 label={project}
-                onDelete={() => handleProjectDelete(project)}
+                onDelete={editing ? () => handleProjectDelete(project) : undefined}
+                sx={{
+                  bgcolor: editing ? "#222" : "#333",
+                  color: "white",
+                  border: `1px solid ${marshGreen}`,
+                }}
+                deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
             ))}
           </Box>
         </Box>
 
-        {/* URLs */}
-        <TextField
-          label="GitHub URL"
-          fullWidth
-          margin="normal"
-          value={profile.github_url}
-          onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
-        <TextField
-          label="LinkedIn URL"
-          fullWidth
-          margin="normal"
-          value={profile.linkedin_url}
-          onChange={(e) =>
-            setProfile({ ...profile, linkedin_url: e.target.value })
-          }
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
-        <TextField
-          label="StackOverflow URL"
-          fullWidth
-          margin="normal"
-          value={profile.stackoverflow_url}
-          onChange={(e) =>
-            setProfile({ ...profile, stackoverflow_url: e.target.value })
-          }
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
-        <TextField
-          label="Website URL"
-          fullWidth
-          margin="normal"
-          value={profile.website_url}
-          onChange={(e) => setProfile({ ...profile, website_url: e.target.value })}
-          InputLabelProps={{ style: { color: "white" } }}
-          InputProps={{ style: { color: "white" } }}
-        />
-
-        <Button type="submit" variant="contained" sx={{ mt: 3 }}>
-          Save Profile
-        </Button>
-      </form>
+        {/* Social Links */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle1" sx={{ color: marshGreen }}>Links</Typography>
+          {["github", "linkedin", "stackoverflow", "website"].map((key) => {
+            const url = profile[`${key}_url`];
+            return (
+              url && (
+                <Typography key={key} sx={{ color: "white", mt: 1 }}>
+                  🔗 {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
+                  <Link href={url} target="_blank" rel="noopener" sx={{ color: marshGreen }}>
+                    {url}
+                  </Link>
+                </Typography>
+              )
+            );
+          })}
+        </Box>
+      </Box>
     </Box>
   );
 }
