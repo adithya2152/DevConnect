@@ -27,18 +27,30 @@ load_dotenv()
 
 app = FastAPI()
 
+origins = [
+    "https://dev-connect-puce.vercel.app",
+    "https://dev-connect-git-main-adithya2152s-projects.vercel.app",
+    "http://localhost:5173"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://dev-connect-puce.vercel.app",
-        "https://dev-connect-git-main-adithya2152s-projects.vercel.app"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]  # Add this line
+    expose_headers=["*"]
 )
+
+# Explicit OPTIONS handler for all paths
+@app.options("/{path:path}")
+async def options_handler():
+    return {
+        "Access-Control-Allow-Origin": ", ".join(origins),
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+    }
+
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
