@@ -36,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://dev-connect-puce.vercel.app",
-        "https://dev-connect-puce.vercel.app/login"
+        "https://dev-connect-puce.vercel.app/login",
         "http://localhost:5173"
     ],
     allow_credentials=True,
