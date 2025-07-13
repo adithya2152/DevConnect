@@ -233,14 +233,10 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
     setActionLoading(prev => ({ ...prev, [memberId]: true }));
     try {
       await acceptProjectApplication(memberId);
-      // Add user to project room
-      await addUserToProjectRoom(projectId);
-      // Refresh applications
-      await fetchApplications();
+      // No need to call addUserToProjectRoom if backend already does it
+      await fetchApplications(); // Refetch to update UI
     } catch (err) {
       console.error('Error accepting application:', err);
-      // Don't fail the entire operation if adding to room fails
-      // The application was already accepted
     } finally {
       setActionLoading(prev => ({ ...prev, [memberId]: false }));
     }
@@ -250,8 +246,7 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
     setActionLoading(prev => ({ ...prev, [memberId]: true }));
     try {
       await denyProjectApplication(memberId);
-      // Refresh applications
-      await fetchApplications();
+      await fetchApplications(); // Refetch to update UI
     } catch (err) {
       console.error('Error denying application:', err);
     } finally {
