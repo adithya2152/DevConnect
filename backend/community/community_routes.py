@@ -461,12 +461,13 @@ async def get_community_requests(
         print(f"👤 User ID: {user_id}")
         print(f"👑 Admin ID: {community.data.get('room_admin_id')}")
         
-        # Check if user is the owner
-        is_owner = community.data.get("room_admin_id") == user_id
+        # Check if user is the owner - use created_by since that's what's stored in the database
+        is_owner = community.data.get("created_by") == user_id
         print(f"🔐 Is owner: {is_owner}")
         
         if not is_owner:
             print(f"❌ Access denied: User {user_id} is not owner of community {community_id}")
+            print(f"📋 Created by: {community.data.get('created_by')}")
             raise HTTPException(status_code=403, detail="Only community owners can view requests")
         
         print(f"✅ Access granted for user {user_id}")
@@ -508,7 +509,7 @@ async def invite_member(
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        if community.data.get("created_by") != user_id:
             raise HTTPException(status_code=403, detail="Only community owners can invite members")
         
         # For now, just return success (email sending would be implemented later)
@@ -548,7 +549,7 @@ async def update_member_role(
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        if community.data.get("created_by") != user_id:
             raise HTTPException(status_code=403, detail="Only community owners can update roles")
         
         # Update member role (this would need to be implemented based on your schema)
@@ -584,7 +585,7 @@ async def remove_member(
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        if community.data.get("created_by") != user_id:
             raise HTTPException(status_code=403, detail="Only community owners can remove members")
         
         # Remove member (this would need to be implemented based on your schema)
@@ -620,7 +621,7 @@ async def update_community(
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        if community.data.get("created_by") != user_id:
             raise HTTPException(status_code=403, detail="Only community owners can update settings")
         
         # Update community settings
@@ -663,7 +664,7 @@ async def delete_community(
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        if community.data.get("room_admin_id") != user_id:
+        if community.data.get("created_by") != user_id:
             raise HTTPException(status_code=403, detail="Only community owners can delete communities")
         
         # Delete community
