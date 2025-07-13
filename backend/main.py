@@ -27,30 +27,18 @@ load_dotenv()
 
 app = FastAPI()
 
-origins = [
-    "https://dev-connect-puce.vercel.app",
-    "https://dev-connect-git-main-adithya2152s-projects.vercel.app",
-    "http://localhost:5173"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://dev-connect-puce.vercel.app",
+        "https://dev-connect-git-main-adithya2152s-projects.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"]  # Add this line
 )
-
-# Explicit OPTIONS handler for all paths
-@app.options("/{path:path}")
-async def options_handler():
-    return {
-        "Access-Control-Allow-Origin": ", ".join(origins),
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "*"
-    }
-
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
@@ -410,8 +398,13 @@ async def add_user_to_project_room_endpoint(project_id: str, payload: dict = Dep
         if not result:
             raise HTTPException(status_code=500, detail="Failed to add user to project room")
         
+        # Check if user was already a member
+        if "already" in str(result):
+            return {"status": "success", "message": "User is already a member of this room"}
+        
         return {"status": "success", "message": "Added to project room successfully"}
     except Exception as e:
+        print(f"Error in add_user_to_project_room_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Join project community (for accepted members)

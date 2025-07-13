@@ -239,6 +239,8 @@ const ProjectApplicationsModal = ({ open, onClose, projectId, projectTitle }) =>
       await fetchApplications();
     } catch (err) {
       console.error('Error accepting application:', err);
+      // Don't fail the entire operation if adding to room fails
+      // The application was already accepted
     } finally {
       setActionLoading(prev => ({ ...prev, [memberId]: false }));
     }
