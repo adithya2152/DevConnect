@@ -29,10 +29,15 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173" , "https://dev-connect-fawn-one.vercel.app" , "https://dev-connect-git-main-adithya2152s-projects.vercel.app" ],  # Your frontend URL
+    allow_origins=[
+        "http://localhost:5173",
+        "https://dev-connect-puce.vercel.app",
+        "https://dev-connect-git-main-adithya2152s-projects.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]  # Add this line
 )
 
 supabase_url = os.getenv("SUPABASE_URL")
