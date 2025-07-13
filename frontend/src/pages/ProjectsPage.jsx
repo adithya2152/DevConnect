@@ -2076,43 +2076,71 @@ function ProjectsPage() {
                   
                   <Grid container spacing={3}>
                     <Grid item xs={12}>
-                    <TextField
-                        label="Required Skills"
-                      name="required_skills"
-                      value={createForm.required_skills.join(', ')}
-                      onChange={(e) => handleCreateArrayChange('required_skills', e.target.value)}
-                      fullWidth
-                        placeholder="React, Node.js, Python (comma-separated)"
-                        InputLabelProps={{ style: { color: '#9ca3af' } }}
-                        InputProps={{ 
-                          style: { color: '#ffffff' }, 
-                          startAdornment: (
-                        <InputAdornment position="start">
-                          <Users size={20} color="#9ca3af" />
-                        </InputAdornment>
-                          ) 
-                        }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={[]}
+                      value={createForm.required_skills}
+                      onChange={(e, v) => setCreateForm(f => ({ ...f, required_skills: v }))}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (
+                        <Chip 
+                          key={index} 
+                          variant="outlined" 
+                          label={option} 
+                          {...getTagProps({ index, key: undefined })} 
+                          sx={{ 
+                            color: '#ffffff', 
+                            borderColor: '#f59e0b', 
+                            background: 'rgba(245, 158, 11, 0.2)',
                             '&:hover': {
-                              borderColor: 'rgba(255, 255, 255, 0.2)',
-                            },
-                            '&.Mui-focused': {
-                              borderColor: '#667eea',
-                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
-                            },
+                              background: 'rgba(245, 158, 11, 0.3)',
+                            }
+                          }} 
+                        />
+                      ))}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Required Skills" 
+                          fullWidth 
+                          placeholder="Enter skills (press Enter to add)" 
+                          InputLabelProps={{ style: { color: '#9ca3af' } }}
+                          InputProps={{ 
+                            ...params.InputProps, 
+                            style: { color: '#ffffff' },
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Users size={20} color="#9ca3af" />
+                              </InputAdornment>
+                            )
+                          }} 
+                      sx={{ 
+                        minWidth: '300px',
+                        '& .MuiOutlinedInput-root': {
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
+                          minHeight: '56px',
+                          padding: '8px',
+                          '&:hover': {
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
                           },
-                          '& .MuiInputBase-input': {
-                            color: '#ffffff',
-                            '&::placeholder': {
-                              color: '#9ca3af',
-                              opacity: 1,
-                            },
+                          '&.Mui-focused': {
+                            borderColor: '#667eea',
+                            boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                          },
                         },
-                      }}
+                        '& .MuiInputBase-input': {
+                          color: '#ffffff',
+                          padding: '16px',
+                          '&::placeholder': {
+                            color: '#9ca3af',
+                            opacity: 1,
+                          },
+                        },
+                      }} 
+                        />
+                      )}
                     />
                   </Grid>
                     
