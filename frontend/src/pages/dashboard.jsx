@@ -41,7 +41,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div>
+    <>
       <NavBar />
       <Box sx={{ px: 3, py: 2 }}>
         <Typography variant="h4" sx={{ color: marshGreen, mb: 2 }}>
@@ -92,6 +92,6 @@ export default function Dashboard() {
 
       <InlineChatbox />
       <ChatWidget />
-    </div>
+    </>
   );
 }
