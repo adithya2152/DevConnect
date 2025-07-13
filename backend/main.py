@@ -53,11 +53,17 @@ async def add_proxy_headers(request: Request, call_next):
     response.headers["X-Forwarded-For"] = request.client.host
     return response
 
-# Explicit OPTIONS handler
-@app.options("/{path:path}")
-async def universal_options_handler():
-    return {"message": "OK"}
-
+# Explicit OPTIONS handler@app.options("/{path:path}")
+async def preflight_handler(request: Request, path: str):
+    return Response(
+        status_code=204,
+        headers={
+            "Access-Control-Allow-Origin": "https://dev-connect-puce.vercel.app",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE, PUT",
+            "Access-Control-Allow-Headers": request.headers.get("Access-Control-Request-Headers", "*"),
+            "Access-Control-Max-Age": "86400"
+        }
+    )
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
