@@ -275,6 +275,14 @@ async def create_app_project(project: AppProjectCreate, payload: dict = Depends(
     
     created = insert_app_project(project_data)
     if created:
+        # Add the creator as an admin member
+        member_data = {
+            "project_id": created["id"],
+            "user_id": payload["sub"],
+            "role": "admin",
+            "status": "active"
+        }
+        insert_app_project_member(member_data)
         return {"status": "success", "project": created}
     else:
         raise HTTPException(status_code=500, detail="Failed to create project")
