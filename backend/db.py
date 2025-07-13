@@ -714,11 +714,22 @@ def update_project_room_id(project_id: str, room_id: str):
 # Add user to project room
 def add_user_to_project_room(room_id: str, user_id: str):
     try:
+        # First check if user is already a member
+        existing_member = supabase.table("room_members") \
+            .select("*") \
+            .eq("room_id", room_id) \
+            .eq("user_id", user_id) \
+            .execute()
+        
+        if existing_member.data:
+            print(f"User {user_id} is already a member of room {room_id}")
+            return existing_member.data[0]  # Return existing member data
+        
+        # If not a member, add them
         member_data = {
             "room_id": room_id,
             "user_id": user_id,
             "role": "member"
-            # Removed request_status as it might not exist in the table
         }
         response = supabase.table("room_members").insert(member_data).execute()
         return response.data[0] if response.data else None

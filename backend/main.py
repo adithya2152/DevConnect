@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any
 import os
 import httpx
 from fastapi import FastAPI, HTTPException, Path
+from fastapi import FastAPI, Request, Response
 # Import your own modules
 from email_utils import send_otp_email
 from auth.auth import verify_token
@@ -415,8 +416,13 @@ async def add_user_to_project_room_endpoint(project_id: str, payload: dict = Dep
         if not result:
             raise HTTPException(status_code=500, detail="Failed to add user to project room")
         
+        # Check if user was already a member
+        if "already" in str(result):
+            return {"status": "success", "message": "User is already a member of this room"}
+        
         return {"status": "success", "message": "Added to project room successfully"}
     except Exception as e:
+        print(f"Error in add_user_to_project_room_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Join project community (for accepted members)
