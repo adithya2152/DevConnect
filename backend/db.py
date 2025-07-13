@@ -456,44 +456,61 @@ async def Update_notif(notif_id:str):
         return []   
     
 async def get_communities(user_id: str):
+    """
+    Get all public communities (both 'group' and 'private_group' types) 
+    that the user hasn't created
+    """
     try:
         response = (supabase.table("rooms")
-                    .select("*")
-                    .eq("type",  "group")
+                    .select("*, room_members(count)", count="exact")
+                    .or_("type.eq.group,type.eq.private_group")  # Include both types
                     .neq("created_by", user_id)
                     .execute()
                     )
-        if response.data:
-            return response.data
-        else:
-            return []
+        
+        communities = []
+        for room in response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
     except Exception as e:
         print(f"Error fetching communities: {e}")
         return []
-    
-async def get_comminities_by_userid(userId : str):
+
+async def get_comminities_by_userid(userId: str):
+    """
+    Get all communities (both types) created by the user
+    """
     try:
-        response = ( supabase.table("rooms")
-                    .select("*")
-                    .eq("type", "group")
-                    .eq("created_by", userId)
-                    .execute()
-                    )
-        if response.data:
-            return response.data
-        else:
-            return []
+        response = (supabase.table("rooms")
+                   .select("*, room_members(count)", count="exact")
+                   .or_("type.eq.group,type.eq.private_group")  # Include both types
+                   .eq("created_by", userId)
+                   .execute()
+                   )
+        
+        communities = []
+        for room in response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
     except Exception as e:
         print(f"Error fetching communities: {e}")
         return []
-    
+
 async def get_joined_communities(user_id: str):
     """
-    Fetch all communities (rooms) a user has joined
-    Args:
-        user_id: UUID of the user
-    Returns:
-        List of communities with details or empty list on error
+    Fetch all communities (both types) a user has joined
     """
     try:
         # First get all room IDs the user is a member of
@@ -509,20 +526,29 @@ async def get_joined_communities(user_id: str):
             
         room_ids = [member["room_id"] for member in member_response.data]
         
-        # Then fetch full details of those rooms
+        # Then fetch full details of those rooms with member counts
         rooms_response = (
             supabase.table("rooms")
-            .select("*")
+            .select("*, room_members(count)", count="exact")
             .in_("id", room_ids)
+            .or_("type.eq.group,type.eq.private_group")  # Include both types
             .execute()
         )
         
-        return rooms_response.data
+        communities = []
+        for room in rooms_response.data:
+            communities.append({
+                **room,
+                "member_count": room["room_members"][0]["count"] if room.get("room_members") else 0,
+                "is_private": room["type"] == "private_group",  # Set based on type
+                "room_admin_id": room["created_by"]
+            })
+        
+        return communities
         
     except Exception as e:
         print(f"Error fetching joined communities: {str(e)}")
         return []
-    
 async def add_community(room: dict):
     try:
         response = supabase.table("rooms").insert({"name":room['name'] , "type": "group" , "description":room['description'] , "created_by":room['created_by']}).execute()

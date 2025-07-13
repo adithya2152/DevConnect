@@ -22,9 +22,10 @@ community_app = FastAPI()
 class CommunityResponse(BaseModel):
     id: str
     name: str
-    description: str | None = None
-    type: str
-    created_by: str
+    description: Optional[str] = None
+    is_private: bool
+    member_count: int
+    room_admin_id: str
     created_at: str
 
 class CreateCommunityRequest(BaseModel):
@@ -32,19 +33,44 @@ class CreateCommunityRequest(BaseModel):
     description: str
 
 # API Endpoints
+from fastapi import HTTPException, status, Depends
+from typing import List
+
 @community_app.get("/explore", response_model=List[CommunityResponse])
 async def explore_communities(user_id: str = Depends(get_current_user_id)):
     """
     Get all public communities available to explore
+    Returns:
+        List of communities with:
+        - id: str
+        - name: str
+        - description: str
+        - is_private: bool
+        - member_count: int
+        - room_admin_id: str
+        - created_at: datetime
     """
     try:
         communities = await get_communities(user_id)
-        if communities is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No communities found"
-            )
-        return communities
+        if not communities:  # Changed from None to empty list check
+            return []
+            
+        # Transform to match CommunityResponse model
+        formatted_communities = []
+        for community in communities:
+            formatted_communities.append({
+                "id": community.get("id"),
+                "name": community.get("name"),
+                "description": community.get("description", ""),
+                "is_private": community.get("is_private", False),
+                "member_count": community.get("member_count", 0),
+                "room_admin_id": community.get("room_admin_id"),
+                "created_at": community.get("created_at"),
+                # Add any other required fields
+            })
+        
+        return formatted_communities
+        
     except HTTPException:
         raise
     except Exception as e:
@@ -58,12 +84,37 @@ async def explore_communities(user_id: str = Depends(get_current_user_id)):
 async def joined_communities(user_id: str = Depends(get_current_user_id)):
     """
     Get all communities the current user has joined
+    Returns:
+        List of communities with:
+        - id: str
+        - name: str
+        - description: str
+        - is_private: bool
+        - member_count: int
+        - room_admin_id: str
+        - created_at: datetime
     """
     try:
         communities = await get_joined_communities(user_id)
-        if communities is None:
+        if not communities:
             return []
-        return communities
+            
+        # Transform to match CommunityResponse model
+        formatted_communities = []
+        for community in communities:
+            formatted_communities.append({
+                "id": community.get("id"),
+                "name": community.get("name"),
+                "description": community.get("description", ""),
+                "is_private": community.get("is_private", False),
+                "member_count": community.get("member_count", 0),
+                "room_admin_id": community.get("room_admin_id"),
+                "created_at": community.get("created_at"),
+                # Add any other required fields
+            })
+        
+        return formatted_communities
+        
     except Exception as e:
         print(f"❌ Error fetching joined communities: {e}")
         raise HTTPException(
@@ -75,12 +126,37 @@ async def joined_communities(user_id: str = Depends(get_current_user_id)):
 async def hosted_communities(user_id: str = Depends(get_current_user_id)):
     """
     Get all communities hosted/created by the current user
+    Returns:
+        List of communities with:
+        - id: str
+        - name: str
+        - description: str
+        - is_private: bool
+        - member_count: int
+        - room_admin_id: str (will be current user's ID)
+        - created_at: datetime
     """
     try:
         communities = await get_comminities_by_userid(user_id)
-        if communities is None:
+        if not communities:
             return []
-        return communities
+            
+        # Transform to match CommunityResponse model
+        formatted_communities = []
+        for community in communities:
+            formatted_communities.append({
+                "id": community.get("id"),
+                "name": community.get("name"),
+                "description": community.get("description", ""),
+                "is_private": community.get("is_private", False),
+                "member_count": community.get("member_count", 0),
+                "room_admin_id": community.get("room_admin_id"),  # Should be same as user_id
+                "created_at": community.get("created_at"),
+                # Add any other required fields
+            })
+        
+        return formatted_communities
+        
     except Exception as e:
         print(f"❌ Error fetching hosted communities: {e}")
         raise HTTPException(
@@ -273,7 +349,7 @@ async def create_message(
     # Create message
     message = supabase.table("messages") \
                     .insert({
-                        "roomid": community_id,
+                        "room_id": community_id,
                         "sender_id": user_id,
                         "content": message_data["content"]
                     }) \
@@ -282,7 +358,7 @@ async def create_message(
     # Add sender info to response
     sender = supabase.table("profiles") \
                    .select("username") \
-                   .eq("user_id", user_id) \
+                   .eq("id", user_id) \
                    .single() \
                    .execute()
     
@@ -290,3 +366,56 @@ async def create_message(
         **message.data[0],
         "sender_name": sender.data.get("username", "Anonymous")
     }
+# @community_app.get("/{community_id}/messsages")
+# async def get_community_messages(community_id: str,userId : str = Depends(get_current_user_id)):
+#     try:
+#         result = supabase.table("messages") \
+#                        .select("*") \
+#                        .eq("room_id", community_id) \
+#                        .order("created_at") \
+#                        .execute()
+#         return result.data
+#     except Exception as e:
+#         print(f"❌ Error fetching community messages: {e}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Internal server error while fetching community messages."
+#         )\
+
+# Alternative members endpoint without joins
+@community_app.get("/{room_id}/members")
+async def get_room_members(
+    room_id: str,
+    user_id: str = Depends(get_current_user_id)
+):
+    # Verify user is member
+    is_member = await check_community_membership(room_id, user_id)
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not a member")
+
+    # Get room members
+    members = supabase.table("room_members") \
+                    .select("*") \
+                    .eq("room_id", room_id) \
+                    .execute()
+
+    # Get profile info separately
+    profiles = {}
+    for member in members.data:
+        profile = supabase.table("profiles") \
+                       .select("*") \
+                       .eq("id", member["user_id"]) \
+                       .single() \
+                       .execute()
+        if profile.data:
+            profiles[member["user_id"]] = profile.data
+
+    # Combine data
+    result = []
+    for member in members.data:
+        result.append({
+            **member,
+            "profile": profiles.get(member["user_id"], {})
+        })
+    
+    return result
