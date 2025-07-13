@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+   
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+
+   
+    {
+      "src": "/chat/(.*)",
+      "dest": "https://devconnect-a8lf.onrender.com/chat/$1",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/search/(.*)",
+      "dest": "https://devconnect-a8lf.onrender.com/search/$1",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/communities/(.*)",
+      "dest": "https://devconnect-a8lf.onrender.com/communities/$1",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+
+  
+    {
+      "src": "/(send-otp|verify-otp|register|login|logout)",
+      "dest": "https://devconnect-a8lf.onrender.com/$1",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/(api/protected|api/app_projects_with_members|api/test)",
+      "dest": "https://devconnect-a8lf.onrender.com/$1",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/(app_projects|app_project_members)",
+      "dest": "https://devconnect-a8lf.onrender.com/api/$1",
+      "methods": ["POST", "OPTIONS"]
+    },
+ 
+    {
+      "src": "/dashboard",
+      "dest": "/",
+      "status": 200
+    },
+    {
+      "src": "/profile.*",
+      "dest": "/",
+      "status": 200
+    },
+    {
+      "src": "/.*",
+      "dest": "/",
+      "status": 200
+    }
+  ]
+}
