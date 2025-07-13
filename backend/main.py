@@ -38,10 +38,9 @@ app.add_middleware(
         "https://dev-connect-puce.vercel.app",
         "https://dev-connect-puce.vercel.app/login",
         "http://localhost:5173",
-        "http://localhost:5173/login"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],    
     allow_headers=["*"],
     expose_headers=["*"]
 )
