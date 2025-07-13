@@ -35,7 +35,7 @@ export default function Profile() {
       const user = JSON.parse(userStr);
 
       try {
-        const res = await fetch(`http://localhost:8000/api/profile/${user.id}`);
+        const res = await fetch(${import.meta.env.VITE_API_KEY}/api/profile/${user.id});
         const data = await res.json();
         setProfile({
           ...data,
@@ -57,7 +57,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/profile/update", {
+      const res = await fetch(${import.meta.env.VITE_API_KEY}/api/profile/update, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...profile, id: user.id, email: user.email }),
@@ -76,50 +76,9 @@ export default function Profile() {
     }
   };
 
-<<<<<<< HEAD
   const handleSkillAdd = () => {
     if (skillInput && !profile.skills.includes(skillInput.trim())) {
       setProfile({ ...profile, skills: [...profile.skills, skillInput.trim()] });
-=======
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      alert("You must be logged in");
-      setLoading(false);
-      return;
-    }
-    const user = JSON.parse(userStr);
-
-    const updates = {
-      ...profile,
-      id: user.id,
-      email: user.email,
-      updated_at: new Date(),
-    };
-
-    const { error } = await supabase.from("profiles").upsert(updates);
-
-    if (error) {
-      toast.error("Error saving profile");
-      console.error("Error saving profile:", error.message);
-    } else {
-      toast.success("Profile saved successfully!");
-    }
-
-    setLoading(false);
-  };
-
-  const handleSkillAdd = () => {
-    const trimmedSkill = skillInput.trim();
-    if (trimmedSkill && !profile.skills.includes(trimmedSkill)) {
-      setProfile({
-        ...profile,
-        skills: [...profile.skills, trimmedSkill],
-      });
->>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
       setSkillInput("");
       toast.success("Skill added!");
     } else if (profile.skills.includes(trimmedSkill)) {
@@ -127,27 +86,9 @@ export default function Profile() {
     }
   };
 
-<<<<<<< HEAD
   const handleProjectAdd = () => {
     if (projectInput && !profile.projects.includes(projectInput.trim())) {
       setProfile({ ...profile, projects: [...profile.projects, projectInput.trim()] });
-=======
-  const handleSkillDelete = (skill) => {
-    setProfile({
-      ...profile,
-      skills: profile.skills.filter((s) => s !== skill),
-    });
-    toast.success("Skill removed!");
-  };
-
-  const handleProjectAdd = () => {
-    const trimmedProject = projectInput.trim();
-    if (trimmedProject && !profile.projects.includes(trimmedProject)) {
-      setProfile({
-        ...profile,
-        projects: [...profile.projects, trimmedProject],
-      });
->>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
       setProjectInput("");
       toast.success("Project added!");
     } else if (profile.projects.includes(trimmedProject)) {
@@ -155,17 +96,8 @@ export default function Profile() {
     }
   };
 
-<<<<<<< HEAD
   const handleSkillDelete = (skill) => {
     setProfile({ ...profile, skills: profile.skills.filter((s) => s !== skill) });
-=======
-  const handleProjectDelete = (project) => {
-    setProfile({
-      ...profile,
-      projects: profile.projects.filter((p) => p !== project),
-    });
-    toast.success("Project removed!");
->>>>>>> d953f8c1a3986bb1fbeec5449856150fb860d6c6
   };
 
   const handleProjectDelete = (project) => {
@@ -202,7 +134,7 @@ export default function Profile() {
       <Box
         sx={{
           backgroundColor: "#111",
-          border: `2px solid ${marshGreen}`,
+          border: 2px solid ${marshGreen},
           borderRadius: 4,
           p: 3,
         }}
@@ -301,7 +233,7 @@ export default function Profile() {
                 sx={{
                   bgcolor: editing ? "#222" : marshGreen,
                   color: editing ? "white" : "#000",
-                  border: editing ? `1px solid ${marshGreen}` : "none",
+                  border: editing ? 1px solid ${marshGreen} : "none",
                 }}
                 deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
@@ -336,7 +268,7 @@ export default function Profile() {
                 sx={{
                   bgcolor: editing ? "#222" : "#333",
                   color: "white",
-                  border: `1px solid ${marshGreen}`,
+                  border: 1px solid ${marshGreen},
                 }}
                 deleteIcon={editing ? <DeleteIcon /> : undefined}
               />
@@ -348,7 +280,7 @@ export default function Profile() {
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle1" sx={{ color: marshGreen }}>Links</Typography>
           {["github", "linkedin", "stackoverflow", "website"].map((key) => {
-            const url = profile[`${key}_url`];
+            const url = profile[${key}_url];
             return (
               url && (
                 <Typography key={key} sx={{ color: "white", mt: 1 }}>
