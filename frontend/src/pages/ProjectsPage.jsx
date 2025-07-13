@@ -751,8 +751,8 @@ function ProjectsPage() {
     description: '',
     detailed_description: '',
     status: 'active',
-    project_type: '',
-    domain: '',
+    project_type: 'full_stack',
+    domain: 'web_development',
     difficulty_level: 'intermediate',
     required_skills: [],
     tech_stack: [],
@@ -937,7 +937,7 @@ function ProjectsPage() {
   const handleCreateClose = () => {
     setCreateOpen(false);
     setCreateForm({
-      title: '', description: '', detailed_description: '', status: 'active', project_type: '', domain: '', difficulty_level: 'intermediate', required_skills: [], tech_stack: [], programming_languages: [], estimated_duration: '', team_size_min: 1, team_size_max: 5, is_remote: true, timezone_preference: '', github_url: '', demo_url: '', figma_url: '', documentation_url: '', image_url: '', is_recruiting: true, is_public: true, collaboration_type: 'open', tags: [], deadline: '', started_at: '', completed_at: '',
+      title: '', description: '', detailed_description: '', status: 'active', project_type: 'full_stack', domain: 'web_development', difficulty_level: 'intermediate', required_skills: [], tech_stack: [], programming_languages: [], estimated_duration: '', team_size_min: 1, team_size_max: 5, is_remote: true, timezone_preference: '', github_url: '', demo_url: '', figma_url: '', documentation_url: '', image_url: '', is_recruiting: true, is_public: true, collaboration_type: 'open', tags: [], deadline: '', started_at: '', completed_at: '',
     });
     setCreateError('');
     setCreateSuccess('');
@@ -1663,10 +1663,12 @@ function ProjectsPage() {
                           ) 
                         }}
                       sx={{
+                        minWidth: '350px',
                         '& .MuiOutlinedInput-root': {
                             background: 'rgba(255, 255, 255, 0.05)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: '12px',
+                            minHeight: '56px',
                             '&:hover': {
                               borderColor: 'rgba(255, 255, 255, 0.2)',
                             },
@@ -1677,6 +1679,7 @@ function ProjectsPage() {
                           },
                           '& .MuiInputBase-input': {
                             color: '#ffffff',
+                            padding: '16.5px 14px',
                             '&::placeholder': {
                               color: '#9ca3af',
                               opacity: 1,
@@ -1706,10 +1709,13 @@ function ProjectsPage() {
                           ) 
                         }}
                       sx={{
+                        minWidth: '400px',
+                        minHeight: '100px',
                         '& .MuiOutlinedInput-root': {
                             background: 'rgba(255, 255, 255, 0.05)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: '12px',
+                            padding: '16px',
                             '&:hover': {
                               borderColor: 'rgba(255, 255, 255, 0.2)',
                             },
@@ -1720,6 +1726,7 @@ function ProjectsPage() {
                           },
                           '& .MuiInputBase-input': {
                             color: '#ffffff',
+                            padding: '16px',
                             '&::placeholder': {
                               color: '#9ca3af',
                               opacity: 1,
@@ -2275,7 +2282,7 @@ function ProjectsPage() {
                   </Typography>
                   
                   <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={8}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Is Remote</InputLabel>
                       <StyledSelect
@@ -2284,10 +2291,12 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, is_remote: String(e.target.value) === 'true' }))}
                         label="Is Remote"
                           sx={{
+                            minWidth: '100px',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              minHeight: '56px',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -2296,7 +2305,10 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
                             },
-                            '& .MuiSelect-select': { color: '#ffffff' }
+                            '& .MuiSelect-select': { 
+                              color: '#ffffff',
+                              padding: '16.5px 14px'
+                            }
                           }}
                           MenuProps={{ 
                             PaperProps: { 
@@ -2594,8 +2606,8 @@ function ProjectsPage() {
                     Project Settings
                   </Typography>
                   
-                  <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
+                                    <Grid container spacing={3}>
+                  <Grid item xs={12} md={10}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Is Recruiting</InputLabel>
                       <StyledSelect
@@ -2604,10 +2616,12 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, is_recruiting: String(e.target.value) === 'true' }))}
                         label="Is Recruiting"
                           sx={{
+                            minWidth: '120px',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              minHeight: '56px',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -2616,7 +2630,10 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
                             },
-                            '& .MuiSelect-select': { color: '#ffffff' }
+                            '& .MuiSelect-select': { 
+                              color: '#ffffff',
+                              padding: '16.5px 14px'
+                            }
                           }}
                           MenuProps={{ 
                             PaperProps: { 
@@ -2635,7 +2652,7 @@ function ProjectsPage() {
                     </FormControl>
                   </Grid>
                     
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={2}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Is Public</InputLabel>
                       <StyledSelect
@@ -2644,10 +2661,12 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, is_public: String(e.target.value) === 'true' }))}
                         label="Is Public"
                           sx={{
+                            minWidth: '90px',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              minHeight: '56px',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -2656,7 +2675,10 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                               },
                             },
-                            '& .MuiSelect-select': { color: '#ffffff' }
+                            '& .MuiSelect-select': { 
+                              color: '#ffffff',
+                              padding: '16.5px 14px'
+                            }
                           }}
                           MenuProps={{ 
                             PaperProps: { 
@@ -2675,7 +2697,7 @@ function ProjectsPage() {
                     </FormControl>
                   </Grid>
                     
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} md={10}>
                       <FormControl fullWidth>
                         <InputLabel sx={{ color: '#9ca3af' }}>Collaboration Type</InputLabel>
                       <StyledSelect
@@ -2684,10 +2706,12 @@ function ProjectsPage() {
                         onChange={e => setCreateForm(f => ({ ...f, collaboration_type: String(e.target.value) }))}
                         label="Collaboration Type"
                           sx={{
+                            minWidth: '150px',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              minHeight: '56px',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -2696,7 +2720,10 @@ function ProjectsPage() {
                                 boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
                             },
                           },
-                          '& .MuiSelect-select': { color: '#ffffff' }
+                          '& .MuiSelect-select': { 
+                            color: '#ffffff',
+                            padding: '16.5px 14px'
+                          }
                         }}
                         MenuProps={{ 
                           PaperProps: { 
@@ -2745,15 +2772,18 @@ function ProjectsPage() {
                           label="Tags" 
                           fullWidth 
                           placeholder="Enter tags (press Enter to add)" 
+                          InputLabelProps={{ style: { color: '#9ca3af' } }}
                           InputProps={{ 
                             ...params.InputProps, 
                             style: { color: '#ffffff' } 
                           }} 
                           sx={{ 
+                            minWidth: '400px',
                             '& .MuiOutlinedInput-root': {
                               background: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               borderRadius: '12px',
+                              minHeight: '56px',
                               '&:hover': {
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
                               },
@@ -2764,6 +2794,7 @@ function ProjectsPage() {
                             },
                             '& .MuiInputBase-input': {
                               color: '#ffffff',
+                              padding: '16.5px 14px',
                               '&::placeholder': {
                                 color: '#9ca3af',
                                 opacity: 1,
