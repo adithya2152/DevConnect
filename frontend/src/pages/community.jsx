@@ -781,7 +781,7 @@ export default function Communities() {
             Cancel
           </Button>
           <Button
-            onClick={() => alert("REQ BASED JOIN COMMING SOON)")}
+            onClick={() => handleJoin(dialog.community?.id)}
             autoFocus
             variant="contained"
             sx={{
