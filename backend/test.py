@@ -1,23 +1,21 @@
 import os
 os.environ.pop("SSL_CERT_FILE", None)
-
 from supabase import create_client
-import os
 from dotenv import load_dotenv
 
+# Load environment variables from a .env file (make sure you have python-dotenv installed)
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def test_supabase():
-    response = supabase.from_("profiles").select("*").execute()
-    print(type(response))
-    print(dir(response))
-    print("Error:", response.error)
+def fetch_and_print():
+    response =  supabase.from_("profiles").select("*").eq("id", "04a7eead-f5cc-464d-a34d-e0f15fa27338").single().execute()
+
+
     print("Data:", response.data)
 
 if __name__ == "__main__":
-    test_supabase()
+    fetch_and_print()

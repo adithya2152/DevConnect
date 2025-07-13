@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from typing import Optional, List, Dict, Any
 import os
 import httpx
-
+from fastapi import FastAPI, HTTPException, Path
 # Import your own modules
 from email_utils import send_otp_email
 from auth.auth import verify_token
@@ -19,14 +19,14 @@ from db import get_projects_with_members, insert_app_project, insert_app_project
 from notification import notifrouter
 from extractintent import extract_intent  # Your async function to extract intent/domain
 from recom import find_people, find_projects  # Your async search functions
-
+from supabase import create_client, Client
 load_dotenv()
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Your frontend URL
+    allow_origins=["*"],  # Your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,7 +35,7 @@ app.add_middleware(
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
+supabase: Client = create_client(supabase_url, supabase_key)
 if not supabase_url or not supabase_key:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY environment variables must be set")
 
@@ -329,3 +329,83 @@ async def chat_endpoint(message: Dict[str, str] = Body(...)) -> Dict[str, Any]:
     except Exception as e:
         print("Chat error:", e)
         raise HTTPException(status_code=500, detail="Internal chatbot error")
+
+@app.get("/api/profile/{user_id}")
+def get_profile(user_id: str = Path(..., title="User ID")):
+    try:
+        response = supabase.from_("profiles").select("*").eq("id", user_id).single().execute()
+    except Exception as e:
+        print("Error:", e)
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return response.data
+
+def to_pg_array(arr):
+    escaped = [str(item).replace('"', '\\"') for item in arr]
+    quoted = [f'"{item}"' for item in escaped]
+    return "{" + ",".join(quoted) + "}"
+
+@app.get("/feed/{user_id}")
+def personalized_feed(user_id: str = Path(..., title="User ID")):
+    profile_response = supabase.table("profiles").select("skills, projects").eq("id", user_id).single().execute()
+    if not profile_response.data:
+        raise HTTPException(404, detail="User not found")
+
+    profile = profile_response.data
+    tags = list(set((profile.get("skills") or []) + (profile.get("projects") or [])))
+    if not tags:
+        return []
+
+    # Build 'or' filter for ilike substring matching on tags text
+    or_filters = " or ".join([f"tags::text.ilike.%{tag}%" for tag in tags])
+
+    posts_response = (
+        supabase
+        .table("posts")
+        .select("*")
+        .execute()
+    )
+
+    
+
+    return posts_response.data
+
+class ProfileUpdate(BaseModel):
+    id: str
+    email: str
+    full_name: str = ""
+    username: str = ""
+    bio: str = ""
+    location: str = ""
+    skills: list[str] = []
+    projects: list[str] = []
+    github_url: str = ""
+    linkedin_url: str = ""
+    stackoverflow_url: str = ""
+    website_url: str = ""
+
+@app.post("/api/profile/update")
+async def update_profile(profile: ProfileUpdate):
+    try:
+        # Update profile in Supabase
+        response = supabase.table("profiles").update({
+            "full_name": profile.full_name,
+            "username": profile.username,
+            "bio": profile.bio,
+            "location": profile.location,
+            "skills": profile.skills,
+            "projects": profile.projects,
+            "github_url": profile.github_url,
+            "linkedin_url": profile.linkedin_url,
+            "stackoverflow_url": profile.stackoverflow_url,
+            "website_url": profile.website_url,
+        }).eq("id", profile.id).execute()
+
+        if len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="Profile not found")
+
+        return {"message": "Profile updated successfully", "data": response.data[0]}
+
+    except Exception as e:
+        print("Error updating profile:", e)
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
