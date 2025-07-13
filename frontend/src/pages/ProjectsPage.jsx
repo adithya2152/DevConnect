@@ -49,7 +49,8 @@ import {
   Clock,
   CheckCircle,
   Pause,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import NavBar from '../components/nav';
 import axios from 'axios';
@@ -719,6 +720,15 @@ const NoCommunityDialog = ({ open, onClose, projectTitle }) => {
   );
 };
 
+// Helper function to get proper image URL
+const getProjectImageUrl = (imageUrl) => {
+  if (!imageUrl || imageUrl === '' || imageUrl === 'EMPTY') {
+    // Return a default project image - same as backend default
+    return 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop';
+  }
+  return imageUrl;
+};
+
 function ProjectsPage() {
   useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -815,12 +825,12 @@ function ProjectsPage() {
           members: (project.app_project_members || [])
             .filter(m => m.status === 'active')
             .map(m => ({
-              id: m.profiles?.id,
-              name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
-              avatar: m.profiles?.avatar || '',
-              email: m.profiles?.email || '',
-              role: m.role,
-              status: m.status,
+            id: m.profiles?.id,
+            name: m.profiles?.full_name || m.profiles?.username || 'Unknown',
+            avatar: m.profiles?.avatar || '',
+            email: m.profiles?.email || '',
+            role: m.role,
+            status: m.status,
             })),
           applications_count: project.applications_count,
         }));
@@ -1280,7 +1290,7 @@ function ProjectsPage() {
                       <CardMedia
                         component="img"
                         height="200"
-                        image={project.image_url}
+                        image={getProjectImageUrl(project.image_url)}
                         alt={project.title}
                         sx={{
                           transition: 'transform 0.3s ease',
@@ -1465,9 +1475,9 @@ function ProjectsPage() {
                                 {roomLoading[project.id] ? 'Joining...' : 'Join Community'}
                               </GradientButton>
                             ) : (
-                              <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
-                                {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
-                              </GradientButton>
+                          <GradientButton fullWidth onClick={() => handleApply(project.id)} disabled={applyLoading[project.id] || appliedProjects.includes(project.id)}>
+                            {applyLoading[project.id] ? 'Applying...' : appliedProjects.includes(project.id) ? 'Applied!' : 'Apply to Join'}
+                          </GradientButton>
                             )}
                           </>
                         )}
@@ -1479,7 +1489,7 @@ function ProjectsPage() {
                               onClick={() => handleOpenApplicationsModal(project.id, project.title)}
                             >
                               View Applications ({project.applications_count || 0})
-                            </GradientButton>
+                          </GradientButton>
                             <GradientButton 
                               fullWidth 
                               onClick={() => handleCreateCommunity(project.id)}
@@ -1521,63 +1531,114 @@ function ProjectsPage() {
           </Grid>
 
           {/* Create Project Modal */}
-          <Dialog open={createOpen} onClose={handleCreateClose} maxWidth="md" fullWidth sx={{ alignItems: 'flex-start' }} PaperProps={{ sx: { background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(24px)', minWidth: { md: 700 }, position: 'relative' } }}>
+          <Dialog open={createOpen} onClose={handleCreateClose} maxWidth="lg" fullWidth sx={{ alignItems: 'flex-start' }} PaperProps={{ sx: { background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(24px)', minWidth: { md: 700 }, width: 900, maxWidth: '90vw', position: 'relative' } }}>
             <IconButton onClick={handleCreateClose} sx={{ position: 'absolute', top: 12, right: 12, color: '#fff', zIndex: 10 }}>
               <X size={28} />
             </IconButton>
             <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: 28, letterSpacing: 1 }}>Create New Project</DialogTitle>
             <DialogContent sx={{ p: 4, overflowY: 'auto', maxHeight: '90vh' }}>
-              <Box component="form" onSubmit={handleCreateSubmit} sx={{ width: '100%', mt: 2 }}>
+              <Box component="form" onSubmit={handleCreateSubmit} sx={{ width: '100%' }}>
+                
+                {/* Basic Information Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Code size={20} />
+                    Basic Information
+                  </Typography>
+                  
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
+                    <Grid item xs={12}>
                     <TextField
-                      label="Title"
+                        label="Project Title"
                       name="title"
                       value={createForm.title}
                       onChange={handleCreateChange}
                       fullWidth
                       required
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="Enter your project title"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Code size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                    
+                    <Grid item xs={12}>
                     <TextField
-                      label="Description"
+                        label="Short Description"
                       name="description"
                       value={createForm.description}
                       onChange={handleCreateChange}
                       fullWidth
                       required
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="Brief description of your project"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <MessageSquare size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={12}>
+                    
+                    <Grid item xs={12}>
                     <TextField
                       label="Detailed Description"
                       name="detailed_description"
@@ -1585,23 +1646,58 @@ function ProjectsPage() {
                       onChange={handleCreateChange}
                       fullWidth
                       multiline
-                      rows={3}
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        rows={4}
+                        placeholder="Provide a detailed description of your project, goals, and requirements"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Code size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                  </Grid>
+                </Box>
+
+                {/* Project Details Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Settings size={20} />
+                    Project Details
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Estimated Duration"
@@ -1610,22 +1706,40 @@ function ProjectsPage() {
                       onChange={handleCreateChange}
                       fullWidth
                       required
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="e.g., 2-3 months, 6 weeks"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Clock size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={6} md={3}>
                     <TextField
                       label="Team Size (Min)"
@@ -1635,22 +1749,35 @@ function ProjectsPage() {
                       onChange={handleCreateChange}
                       fullWidth
                       required
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Users size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={6} md={3}>
                     <TextField
                       label="Team Size (Max)"
@@ -1660,37 +1787,67 @@ function ProjectsPage() {
                       onChange={handleCreateChange}
                       fullWidth
                       required
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Users size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Status</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Status</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.status}
                         onChange={e => setCreateForm(f => ({ ...f, status: String(e.target.value) }))}
                         label="Status"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { active: 'Active', completed: 'Completed', on_hold: 'On Hold', cancelled: 'Cancelled' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiSelect-select': { color: '#ffffff' }
+                          }}
+                          MenuProps={{ 
+                            PaperProps: { 
+                              sx: { 
+                                background: 'rgba(30,30,30,0.95)', 
+                                color: '#fff',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px'
+                              } 
+                            } 
                         }}
                       >
                         <MenuItem value="active" sx={{ color: '#fff' }}>Active</MenuItem>
@@ -1700,21 +1857,39 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Project Type</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Project Type</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.project_type}
                         onChange={e => setCreateForm(f => ({ ...f, project_type: String(e.target.value) }))}
                         label="Project Type"
-                        sx={{ color: '#fff', '& .MuiSelect-select, & .MuiSelect-outlined': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { full_stack: 'Full Stack', frontend: 'Frontend', backend: 'Backend', mobile: 'Mobile', design: 'Design', devops: 'DevOps' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiSelect-select': { color: '#ffffff' }
+                          }}
+                          MenuProps={{ 
+                            PaperProps: { 
+                              sx: { 
+                                background: 'rgba(30,30,30,0.95)', 
+                                color: '#fff',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px'
+                              } 
+                            } 
                         }}
                       >
                         <MenuItem value="full_stack" sx={{ color: '#fff' }}>Full Stack</MenuItem>
@@ -1726,21 +1901,39 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Domain</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Domain</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.domain}
                         onChange={e => setCreateForm(f => ({ ...f, domain: String(e.target.value) }))}
                         label="Domain"
-                        sx={{ color: '#fff', '& .MuiSelect-select, & .MuiSelect-outlined': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { web_development: 'Web Development', mobile_development: 'Mobile Development', backend_development: 'Backend Development', data_science: 'Data Science', machine_learning: 'Machine Learning', ai_ml: 'AI/ML', blockchain: 'Blockchain', security: 'Security', testing: 'Testing', devops: 'DevOps', design: 'Design', product: 'Product', research: 'Research', other: 'Other' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiSelect-select': { color: '#ffffff' }
+                        }}
+                        MenuProps={{ 
+                          PaperProps: { 
+                            sx: { 
+                              background: 'rgba(30,30,30,0.95)', 
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px'
+                            } 
+                          } 
                         }}
                       >
                         <MenuItem value="web_development" sx={{ color: '#fff' }}>Web Development</MenuItem>
@@ -1760,21 +1953,39 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                  
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Difficulty Level</InputLabel>
+                    <FormControl fullWidth>
+                      <InputLabel sx={{ color: '#9ca3af' }}>Difficulty Level</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.difficulty_level}
                         onChange={e => setCreateForm(f => ({ ...f, difficulty_level: String(e.target.value) }))}
                         label="Difficulty Level"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced', expert: 'Expert' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiSelect-select': { color: '#ffffff' }
+                        }}
+                        MenuProps={{ 
+                          PaperProps: { 
+                            sx: { 
+                              background: 'rgba(30,30,30,0.95)', 
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px'
+                            } 
+                          } 
                         }}
                       >
                         <MenuItem value="beginner" sx={{ color: '#fff' }}>Beginner</MenuItem>
@@ -1784,66 +1995,231 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                </Grid>
+              </Box>
+
+                {/* Skills & Technologies Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Code size={20} />
+                    Skills & Technologies
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
                     <TextField
-                      label="Required Skills (comma-separated)"
+                        label="Required Skills"
                       name="required_skills"
                       value={createForm.required_skills.join(', ')}
                       onChange={(e) => handleCreateArrayChange('required_skills', e.target.value)}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="React, Node.js, Python (comma-separated)"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Users size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                    
+                    <Grid item xs={12}>
                     <Autocomplete
                       multiple
                       freeSolo
                       options={[]}
                       value={createForm.tech_stack}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, tech_stack: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
-                      renderInput={(params) => <TextField {...params} label="Tech Stack" fullWidth placeholder="Enter tech stack..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                        renderTags={(value, getTagProps) => value.map((option, index) => (
+                          <Chip 
+                            key={index} 
+                            variant="outlined" 
+                            label={option} 
+                            {...getTagProps({ index, key: undefined })} 
+                            sx={{ 
+                              color: '#ffffff', 
+                              borderColor: '#667eea', 
+                              background: 'rgba(102, 126, 234, 0.2)',
+                              '&:hover': {
+                                background: 'rgba(102, 126, 234, 0.3)',
+                              }
+                            }} 
+                          />
+                        ))}
+                        renderInput={(params) => (
+                          <TextField 
+                            {...params} 
+                            label="Tech Stack" 
+                            fullWidth 
+                            placeholder="Enter technologies (press Enter to add)" 
+                            InputProps={{ 
+                              ...params.InputProps, 
+                              style: { color: '#ffffff' } 
+                            }} 
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiInputBase-input': {
+                                color: '#ffffff',
+                                '&::placeholder': {
+                                  color: '#9ca3af',
+                                  opacity: 1,
+                                },
+                              },
+                            }} 
+                          />
+                        )}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                    
+                    <Grid item xs={12}>
                     <Autocomplete
                       multiple
                       freeSolo
                       options={[]}
                       value={createForm.programming_languages}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, programming_languages: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
-                      renderInput={(params) => <TextField {...params} label="Programming Languages" fullWidth placeholder="Enter programming languages..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                        renderTags={(value, getTagProps) => value.map((option, index) => (
+                          <Chip 
+                            key={index} 
+                            variant="outlined" 
+                            label={option} 
+                            {...getTagProps({ index, key: undefined })} 
+                            sx={{ 
+                              color: '#ffffff', 
+                              borderColor: '#8b5cf6', 
+                              background: 'rgba(139, 92, 246, 0.2)',
+                              '&:hover': {
+                                background: 'rgba(139, 92, 246, 0.3)',
+                              }
+                            }} 
+                          />
+                        ))}
+                        renderInput={(params) => (
+                          <TextField 
+                            {...params} 
+                            label="Programming Languages" 
+                            fullWidth 
+                            placeholder="Enter languages (press Enter to add)" 
+                            InputProps={{ 
+                              ...params.InputProps, 
+                              style: { color: '#ffffff' } 
+                            }} 
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px',
+                                '&:hover': {
+                                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiInputBase-input': {
+                                color: '#ffffff',
+                                '&::placeholder': {
+                                  color: '#9ca3af',
+                                  opacity: 1,
+                                },
+                              },
+                            }} 
+                          />
+                        )}
                     />
                   </Grid>
+                  </Grid>
+                </Box>
+                {/* Work Settings Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <MapPin size={20} />
+                    Work Settings
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Is Remote</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Is Remote</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.is_remote ? 'true' : 'false'}
                         onChange={e => setCreateForm(f => ({ ...f, is_remote: String(e.target.value) === 'true' }))}
                         label="Is Remote"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { true: 'Yes', false: 'No' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiSelect-select': { color: '#ffffff' }
+                          }}
+                          MenuProps={{ 
+                            PaperProps: { 
+                              sx: { 
+                                background: 'rgba(30,30,30,0.95)', 
+                                color: '#fff',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px'
+                              } 
+                            } 
                         }}
                       >
                         <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
@@ -1851,6 +2227,7 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Timezone Preference"
@@ -1858,45 +2235,98 @@ function ProjectsPage() {
                       value={createForm.timezone_preference}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="e.g., UTC+5:30, EST, PST"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <MapPin size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                  </Grid>
+                </Box>
+
+                {/* Project Links Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <GitBranch size={20} />
+                    Project Links
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <TextField
-                      label="Github URL"
+                        label="GitHub URL"
                       name="github_url"
                       value={createForm.github_url}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="https://github.com/username/project"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <GitBranch size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Demo URL"
@@ -1904,22 +2334,40 @@ function ProjectsPage() {
                       value={createForm.demo_url}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="https://demo.example.com"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <GitBranch size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Figma URL"
@@ -1927,22 +2375,40 @@ function ProjectsPage() {
                       value={createForm.figma_url}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="https://figma.com/file/..."
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Code size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Documentation URL"
@@ -1950,22 +2416,40 @@ function ProjectsPage() {
                       value={createForm.documentation_url}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="https://docs.example.com"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Code size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
                     <TextField
                       label="Image URL"
@@ -1973,37 +2457,89 @@ function ProjectsPage() {
                       value={createForm.image_url}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        placeholder="https://example.com/image.jpg"
+                        InputLabelProps={{ style: { color: '#9ca3af' } }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Code size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                            '&::placeholder': {
+                              color: '#9ca3af',
+                              opacity: 1,
+                            },
                         },
                       }}
                     />
                   </Grid>
+                  </Grid>
+                </Box>
+
+                {/* Project Settings Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Code size={20} />
+                    Project Settings
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Is Recruiting</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Is Recruiting</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.is_recruiting ? 'true' : 'false'}
                         onChange={e => setCreateForm(f => ({ ...f, is_recruiting: String(e.target.value) === 'true' }))}
                         label="Is Recruiting"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { true: 'Yes', false: 'No' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiSelect-select': { color: '#ffffff' }
+                          }}
+                          MenuProps={{ 
+                            PaperProps: { 
+                              sx: { 
+                                background: 'rgba(30,30,30,0.95)', 
+                                color: '#fff',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px'
+                              } 
+                            } 
                         }}
                       >
                         <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
@@ -2011,21 +2547,39 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Is Public</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Is Public</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.is_public ? 'true' : 'false'}
                         onChange={e => setCreateForm(f => ({ ...f, is_public: String(e.target.value) === 'true' }))}
                         label="Is Public"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { true: 'Yes', false: 'No' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiSelect-select': { color: '#ffffff' }
+                          }}
+                          MenuProps={{ 
+                            PaperProps: { 
+                              sx: { 
+                                background: 'rgba(30,30,30,0.95)', 
+                                color: '#fff',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '12px'
+                              } 
+                            } 
                         }}
                       >
                         <MenuItem value="true" sx={{ color: '#fff' }}>Yes</MenuItem>
@@ -2033,21 +2587,39 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
+                    
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth sx={{ minWidth: 180 }}>
-                      <InputLabel sx={{ color: '#fff' }} shrink>Collaboration Type</InputLabel>
+                      <FormControl fullWidth>
+                        <InputLabel sx={{ color: '#9ca3af' }}>Collaboration Type</InputLabel>
                       <StyledSelect
                         fullWidth
                         value={createForm.collaboration_type}
                         onChange={e => setCreateForm(f => ({ ...f, collaboration_type: String(e.target.value) }))}
                         label="Collaboration Type"
-                        sx={{ color: '#fff', '& .MuiSelect-select': { color: '#fff' } }}
-                        MenuProps={{ PaperProps: { sx: { background: 'rgba(30,30,30,0.95)', color: '#fff' } } }}
-                        renderValue={selected => {
-                          if (selected === undefined || selected === '') return <span style={{ color: '#fff', opacity: 0.6 }}>[Placeholder]</span>;
-                          const valueStr = typeof selected === 'boolean' ? String(selected) : selected;
-                          const labelMap = { open: 'Open', closed: 'Closed', private: 'Private' };
-                          return <span style={{ color: '#fff' }}>{labelMap[valueStr] || valueStr}</span>;
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiSelect-select': { color: '#ffffff' }
+                        }}
+                        MenuProps={{ 
+                          PaperProps: { 
+                            sx: { 
+                              background: 'rgba(30,30,30,0.95)', 
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px'
+                            } 
+                          } 
                         }}
                       >
                         <MenuItem value="open" sx={{ color: '#fff' }}>Open</MenuItem>
@@ -2056,124 +2628,258 @@ function ProjectsPage() {
                       </StyledSelect>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  
+                  <Grid item xs={12}>
                     <Autocomplete
                       multiple
                       freeSolo
                       options={[]}
                       value={createForm.tags}
                       onChange={(e, v) => setCreateForm(f => ({ ...f, tags: v }))}
-                      renderTags={(value, getTagProps) => value.map((option, index) => (<Chip key={index} variant="outlined" label={option} {...getTagProps({ index, key: undefined })} sx={{ color: '#fff', borderColor: '#fff', background: 'rgba(255,255,255,0.08)' }} />))}
-                      renderInput={(params) => <TextField {...params} label="Tags" fullWidth placeholder="Enter tags..." InputProps={{ ...params.InputProps, style: { minWidth: 220, color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } } }} sx={{ input: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#fff' }, '&:hover fieldset': { borderColor: '#fff' }, '&.Mui-focused fieldset': { borderColor: '#fff' } } }} />}
+                      renderTags={(value, getTagProps) => value.map((option, index) => (
+                        <Chip 
+                          key={index} 
+                          variant="outlined" 
+                          label={option} 
+                          {...getTagProps({ index, key: undefined })} 
+                          sx={{ 
+                            color: '#ffffff', 
+                            borderColor: '#10b981', 
+                            background: 'rgba(16, 185, 129, 0.2)',
+                            '&:hover': {
+                              background: 'rgba(16, 185, 129, 0.3)',
+                            }
+                          }} 
+                        />
+                      ))}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Tags" 
+                          fullWidth 
+                          placeholder="Enter tags (press Enter to add)" 
+                          InputProps={{ 
+                            ...params.InputProps, 
+                            style: { color: '#ffffff' } 
+                          }} 
+                          sx={{ 
+                            '& .MuiOutlinedInput-root': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#667eea',
+                                boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                              },
+                            },
+                            '& .MuiInputBase-input': {
+                              color: '#ffffff',
+                              '&::placeholder': {
+                                color: '#9ca3af',
+                                opacity: 1,
+                              },
+                            },
+                          }} 
+                        />
+                      )}
                     />
                   </Grid>
+                </Grid>
+              </Box>
+
+                {/* Important Dates Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    color: '#ffffff', 
+                    fontWeight: 600, 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Calendar size={20} />
+                    Important Dates
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Deadline (YYYY-MM-DD)"
+                        label="Deadline"
                       name="deadline"
+                        type="date"
                       value={createForm.deadline}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        InputLabelProps={{ 
+                          style: { color: '#9ca3af' },
+                          shrink: true
+                        }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Calendar size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                          },
+                          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                            filter: 'invert(1)',
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Started At (YYYY-MM-DD)"
+                        label="Started At"
                       name="started_at"
+                        type="date"
                       value={createForm.started_at}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        InputLabelProps={{ 
+                          style: { color: '#9ca3af' },
+                          shrink: true
+                        }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Calendar size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                          },
+                          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                            filter: 'invert(1)',
                         },
                       }}
                     />
                   </Grid>
+                    
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Completed At (YYYY-MM-DD)"
+                        label="Completed At"
                       name="completed_at"
+                        type="date"
                       value={createForm.completed_at}
                       onChange={handleCreateChange}
                       fullWidth
-                      InputLabelProps={{ style: { color: '#fff' } }}
-                      InputProps={{ style: { color: '#fff', '::placeholder': { color: '#fff', opacity: 1 } }, startAdornment: (
+                        InputLabelProps={{ 
+                          style: { color: '#9ca3af' },
+                          shrink: true
+                        }}
+                        InputProps={{ 
+                          style: { color: '#ffffff' }, 
+                          startAdornment: (
                         <InputAdornment position="start">
                           <Calendar size={20} color="#9ca3af" />
                         </InputAdornment>
-                      ) }}
+                          ) 
+                        }}
                       sx={{
-                        input: { color: '#fff' },
                         '& .MuiOutlinedInput-root': {
-                          '& fieldset': { borderColor: '#fff' },
-                          '&:hover fieldset': { borderColor: '#fff' },
-                          '&.Mui-focused fieldset': { borderColor: '#fff' },
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            '&:hover': {
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.2)',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#ffffff',
+                          },
+                          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                            filter: 'invert(1)',
                         },
                       }}
                     />
                   </Grid>
                 </Grid>
+                </Box>
+                
                 <Button
                   type="submit"
                   variant="contained"
                   fullWidth
                   startIcon={<Plus size={20} />}
                   sx={{
-                    background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
+                    background: 'linear-gradient(90deg, #667eea, #764ba2)',
                     borderRadius: '12px',
                     fontWeight: 600,
                     textTransform: 'none',
-                    padding: '12px 24px',
-                    boxShadow: '0 4px 16px rgba(0,114,255,0.15)',
+                    padding: '16px 32px',
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
                     color: '#fff',
-                    mt: 3,
+                    mt: 4,
                     fontSize: 18,
                     '&:hover': {
-                      background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
-                      transform: 'scale(1.05)',
+                      background: 'linear-gradient(90deg, #764ba2, #667eea)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
                     },
+                    '&:disabled': {
+                      background: 'rgba(102, 126, 234, 0.3)',
+                      transform: 'none',
+                    }
                   }}
                   disabled={createLoading}
                 >
-                  {createLoading ? 'Creating...' : 'Create Project'}
+                  {createLoading ? 'Creating Project...' : 'Create Project'}
                 </Button>
+                
                 {createError && (
-                  <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  <Typography color="error" variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
                     {createError}
                   </Typography>
                 )}
                 {createSuccess && (
-                  <Typography color="success" variant="body2" sx={{ mt: 1 }}>
+                  <Typography color="success" variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
                     {createSuccess}
                   </Typography>
                 )}
               </Box>
             </DialogContent>
           </Dialog>
+                
 
           {/* Project Applications Modal */}
           <ProjectApplicationsModal

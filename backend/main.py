@@ -227,6 +227,11 @@ class AppProjectMemberCreate(BaseModel):
 async def create_app_project(project: AppProjectCreate, payload: dict = Depends(verify_token)):
     project_data = project.dict()
     project_data['created_by'] = payload["sub"]
+    
+    # Handle empty image_url - set default Unsplash image
+    if project_data.get('image_url') == '' or project_data.get('image_url') is None:
+        project_data['image_url'] = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop'
+    
     created = insert_app_project(project_data)
     if created:
         return {"status": "success", "project": created}
