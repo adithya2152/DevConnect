@@ -372,25 +372,9 @@ DevConnect/
 - `GET /search/projects` - Search for projects
 - `POST /search/recommend` - Get AI recommendations
 
-## 🤝 Contributing
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
 
-### Development Guidelines
-- Follow the existing code style and conventions
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+ 
 ## 🙏 Acknowledgments
 
 - **Supabase** for the excellent backend-as-a-service platform
@@ -405,6 +389,8 @@ If you have any questions or need help:
 - Create an issue in the repository
 - Join our community discussions
 - Check the documentation
+
+
 
 ---
 

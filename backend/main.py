@@ -23,34 +23,39 @@ from community.community_routes import community_app
 from extractintent import extract_intent  # Your async function to extract intent/domain
 from recom import find_people, find_projects  # Your async search functions
 from supabase import create_client, Client
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 load_dotenv()
 
 app = FastAPI()
 
-origins = [
-    "https://dev-connect-puce.vercel.app",
-    "https://dev-connect-git-main-adithya2152s-projects.vercel.app",
-    "http://localhost:5173"
-]
+app.add_middleware(HTTPSRedirectMiddleware)
 
+# Enhanced CORS config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://dev-connect-puce.vercel.app",
+        "https://dev-connect-puce.vercel.app/login"
+        "http://localhost:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
 
-# Explicit OPTIONS handler for all paths
-@app.options("/{path:path}")
-async def options_handler():
-    return {
-        "Access-Control-Allow-Origin": ", ".join(origins),
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "*"
-    }
+# Cloudflare proxy support
+@app.middleware("http")
+async def add_proxy_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Forwarded-Proto"] = "https"
+    response.headers["X-Forwarded-For"] = request.client.host
+    return response
 
+# Explicit OPTIONS handler
+@app.options("/{path:path}")
+async def universal_options_handler():
+    return {"message": "OK"}
 
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
