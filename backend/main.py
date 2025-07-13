@@ -1,6 +1,6 @@
 import os
 os.environ.pop("SSL_CERT_FILE", None)
-from fastapi import FastAPI, HTTPException, Body, Depends, Form
+from fastapi import FastAPI, HTTPException, Body, Depends, Form , APIRouter
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
@@ -45,12 +45,23 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+api_router = APIRouter(prefix="/api")
+@app.get("/")
+def health_check():
+    return {"status": "healthy", "service": "DevConnect API"}
+
 # Cloudflare proxy support
 @app.middleware("http")
 async def add_proxy_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Forwarded-Proto"] = "https"
     response.headers["X-Forwarded-For"] = request.client.host
+    return response
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
     return response
 
 # Explicit OPTIONS handler@app.options("/{path:path}")

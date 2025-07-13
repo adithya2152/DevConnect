@@ -1,0 +1,14 @@
+services:
+  - name: devconnect-backend
+    type: web
+    env: python
+    build:
+      command: pip install -r requirements.txt
+    start:
+      command: uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 4
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DISABLE_COOKIES
+        value: "true"
