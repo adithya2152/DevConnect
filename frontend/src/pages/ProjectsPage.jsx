@@ -719,6 +719,15 @@ const NoCommunityDialog = ({ open, onClose, projectTitle }) => {
   );
 };
 
+// Helper function to get proper image URL
+const getProjectImageUrl = (imageUrl) => {
+  if (!imageUrl || imageUrl === '' || imageUrl === 'EMPTY') {
+    // Return a default project image - same as backend default
+    return 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop';
+  }
+  return imageUrl;
+};
+
 function ProjectsPage() {
   useAuthGuard();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -1280,7 +1289,7 @@ function ProjectsPage() {
                       <CardMedia
                         component="img"
                         height="200"
-                        image={project.image_url}
+                        image={getProjectImageUrl(project.image_url)}
                         alt={project.title}
                         sx={{
                           transition: 'transform 0.3s ease',
