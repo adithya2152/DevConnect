@@ -816,7 +816,7 @@ function ProjectsPage() {
           setLoading(false);
           return;
         }
-        const res = await axios.get('http://localhost:8000/api/app_projects_with_members', {
+        const res = await axios.get(`${import.meta.env.VITE_API_KEY}/api/app_projects_with_members`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -971,7 +971,7 @@ function ProjectsPage() {
         setLoading(false);
         return;
       }
-      const res = await axios.get('http://localhost:8000/api/app_projects_with_members', {
+      const res = await axios.get(`${import.meta.env.VITE_API_KEY}/api/app_projects_with_members`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -49,7 +49,7 @@ export default function Communities() {
   const [dialog, setDialog] = useState({ open: false, community: null });
   const [create, setCreate] = useState({ name: "", description: "" });
   const userID = JSON.parse(localStorage.getItem("user")).id;
-  const BASE = "http://localhost:8000";
+  const BASE = `${import.meta.env.VITE_API_KEY}`;
 
   useEffect(() => {
     fetchCommunities();
