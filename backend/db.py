@@ -2,6 +2,7 @@ import os
 from supabase import create_client , Client
 import logging
 import datetime
+from typing import List, Dict , Optional
 
 
 try:
@@ -784,7 +785,7 @@ async def check_community_ownership(community_id: str, user_id: str):
     result = supabase.table("rooms") \
                    .select("*") \
                    .eq("id", community_id) \
-                   .eq("owner_id", user_id) \
+                   .eq("created_by", user_id) \
                    .execute()
     return len(result.data) > 0
 
@@ -804,3 +805,6 @@ async def get_community_members(community_id: str):
                    .eq("room_id", community_id) \
                    .execute()
     return result.data
+
+
+#------------------------ handle community ---------------------------
