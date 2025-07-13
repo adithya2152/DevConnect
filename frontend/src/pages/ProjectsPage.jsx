@@ -1531,7 +1531,7 @@ function ProjectsPage() {
           </Grid>
 
           {/* Create Project Modal */}
-          <Dialog open={createOpen} onClose={handleCreateClose} maxWidth="lg" fullWidth sx={{ alignItems: 'flex-start' }} PaperProps={{ sx: { background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(24px)', minWidth: { md: 700 }, width: 900, maxWidth: '90vw', position: 'relative' } }}>
+          <Dialog open={createOpen} onClose={handleCreateClose} maxWidth="xl" fullWidth sx={{ alignItems: 'flex-start' }} PaperProps={{ sx: { background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(24px)', minWidth: { md: 1000 }, width: 1200, maxWidth: '95vw', position: 'relative' } }}>
             <IconButton onClick={handleCreateClose} sx={{ position: 'absolute', top: 12, right: 12, color: '#fff', zIndex: 10 }}>
               <X size={28} />
             </IconButton>
