@@ -29,7 +29,10 @@ load_dotenv()
 
 app = FastAPI()
 
-app.add_middleware(HTTPSRedirectMiddleware)
+# Only enable HTTPS redirect in production
+MODE = os.getenv("MODE", "development")
+if MODE == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Enhanced CORS config
 app.add_middleware(
