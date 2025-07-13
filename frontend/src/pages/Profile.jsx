@@ -9,6 +9,8 @@ import {
   Chip,
 } from "@mui/material";
 
+import toast from "react-hot-toast";
+
 export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -93,22 +95,26 @@ export default function Profile() {
     const { error } = await supabase.from("profiles").upsert(updates);
 
     if (error) {
-      alert("Error saving profile, check console");
+      toast.error("Error saving profile");
       console.error("Error saving profile:", error.message);
     } else {
-      alert("Profile saved!");
+      toast.success("Profile saved successfully!");
     }
 
     setLoading(false);
   };
 
   const handleSkillAdd = () => {
-    if (skillInput && !profile.skills.includes(skillInput.trim())) {
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !profile.skills.includes(trimmedSkill)) {
       setProfile({
         ...profile,
-        skills: [...profile.skills, skillInput.trim()],
+        skills: [...profile.skills, trimmedSkill],
       });
       setSkillInput("");
+      toast.success("Skill added!");
+    } else if (profile.skills.includes(trimmedSkill)) {
+      toast.error("Skill already exists!");
     }
   };
 
@@ -117,15 +123,20 @@ export default function Profile() {
       ...profile,
       skills: profile.skills.filter((s) => s !== skill),
     });
+    toast.success("Skill removed!");
   };
 
   const handleProjectAdd = () => {
-    if (projectInput && !profile.projects.includes(projectInput.trim())) {
+    const trimmedProject = projectInput.trim();
+    if (trimmedProject && !profile.projects.includes(trimmedProject)) {
       setProfile({
         ...profile,
-        projects: [...profile.projects, projectInput.trim()],
+        projects: [...profile.projects, trimmedProject],
       });
       setProjectInput("");
+      toast.success("Project added!");
+    } else if (profile.projects.includes(trimmedProject)) {
+      toast.error("Project already exists!");
     }
   };
 
@@ -134,6 +145,7 @@ export default function Profile() {
       ...profile,
       projects: profile.projects.filter((p) => p !== project),
     });
+    toast.success("Project removed!");
   };
 
   useEffect(() => {
@@ -142,9 +154,17 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <Box sx={{ mt: 4, textAlign: "center" }}>
+      <Box sx={{ 
+        mt: 4, 
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "50vh"
+      }}>
+        <CircularProgress size={60} sx={{ mb: 2 }} />
         <Typography sx={{ color: "white" }}>Loading profile...</Typography>
-        <CircularProgress />
       </Box>
     );
   }

@@ -59,7 +59,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     "sender_id": user_id,
                     "content": content,
                     "room_id": room_id,
-                    "created_at": saved.get("created_at", "now")
+                    "created_at": saved.get("created_at", "now"),
+                    "message_id": saved.get("id") 
                 })
 
                 for client in room_connection[room_id]:

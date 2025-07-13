@@ -26,6 +26,8 @@ import axios from 'axios';
 import useAuthGuard from "../../hooks/useAuthGuarf";
 
 
+import toast from 'react-hot-toast';
+
 export default function ChatSpace() {
   useAuthGuard();
   const { id: roomId } = useParams();
@@ -38,8 +40,8 @@ export default function ChatSpace() {
   const [ws, setWs] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const messagesEndRef = useRef(null);
-  const BASE = "http://localhost:8000";
-  const WS_URL = "ws://localhost:8000";
+  const BASE = import.meta.env.VITE_API_KEY;
+  const WS_URL = import.meta.env.VITE_API_KEY.replace('https://', 'wss://').replace('http://', 'ws://');
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const currentUserId = currentUser?.id;
 
@@ -139,6 +141,7 @@ export default function ChatSpace() {
         };
       } catch (err) {
         console.error("Failed to initialize chat:", err);
+        toast.error("Failed to load chat data");
         navigate('/communities');
       }
     };
@@ -163,6 +166,7 @@ export default function ChatSpace() {
       setNewMessage('');
     } catch (err) {
       console.error("Failed to send message", err);
+      toast.error("Failed to send message");
     }
   };
 

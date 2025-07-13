@@ -11,6 +11,8 @@ import {
   Link,
   IconButton
 } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { CircularProgress } from '@mui/material';
 import { Code, Group, RocketLaunch, Chat } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/nav';
@@ -39,7 +41,33 @@ const features = [
 ];
 
 export default function DevConnectLandingPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading time for landing page
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        background: "linear-gradient(to bottom right, #0f2027, #203a43, #2c5364)",
+        color: "white"
+      }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{

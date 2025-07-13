@@ -11,6 +11,9 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
+import { CircularProgress } from '@mui/material';
+import toast from 'react-hot-toast';
+
 const Login= () => {
   const [credentials, setCredentials] = useState({
     email: '',
@@ -29,10 +32,12 @@ const Login= () => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
     console.log('Logging in with:', credentials);
     // 🔗 Connect to backend here
     try {
-      const res = await axios.post("http://localhost:8000/login",
+      const res = await axios.post(`${import.meta.env.VITE_API_KEY}/login`,
         {
           email: credentials.email,
           password: credentials.password,
@@ -45,15 +50,21 @@ const Login= () => {
         localStorage.setItem('refresh_token', res.data.refresh_token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         console.log('User logged in successfully:', res.data.user);
+        toast.success('Login successful!');
         window.location.href = '/dashboard';
       } else {
         setError(res.data.message || 'Login failed. Please try again.');
+        toast.error(res.data.message || 'Login failed. Please try again.');
       }
       
     } catch (error) {
       
       console.error('Login error:', error);
-      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'An error occurred. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,6 +144,7 @@ const Login= () => {
                   <Button
                     type="submit"
                     variant="contained"
+                    disabled={loading}
                     sx={{
                       background: 'linear-gradient(to right, #00c6ff, #0072ff)',
                       borderRadius: 999,
@@ -146,7 +158,7 @@ const Login= () => {
                       },
                     }}
                   >
-                    Login
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
                   </Button>
                 </Box>
               </Grid>

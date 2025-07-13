@@ -73,7 +73,11 @@ export default function ManageCommunity() {
   });
   const [inviteEmail, setInviteEmail] = useState("");
   const userID = JSON.parse(localStorage.getItem("user"))?.id;
+<<<<<<< HEAD
   const BASE = "http://localhost:8000";
+=======
+  const BASE = import.meta.env.VITE_API_KEY;
+>>>>>>> 81a55d56250156c602d7e5864623291927bb6eec
 
   useEffect(() => {
     fetchCommunityData();
@@ -105,6 +109,10 @@ export default function ManageCommunity() {
       setLoading(false);
     } catch (err) {
       setError("Failed to load community data");
+<<<<<<< HEAD
+=======
+      toast.error("Failed to load community data");
+>>>>>>> 81a55d56250156c602d7e5864623291927bb6eec
       console.error("Community fetch error:", err);
       setLoading(false);
     }
@@ -134,6 +142,10 @@ export default function ManageCommunity() {
       handleMenuClose();
     } catch (err) {
       toast.error("Failed to promote member");
+<<<<<<< HEAD
+=======
+      toast.error("Failed to promote member");
+>>>>>>> 81a55d56250156c602d7e5864623291927bb6eec
     }
   };
 
