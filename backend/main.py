@@ -45,6 +45,10 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+@app.get("/")
+def health_check():
+    return {"status": "healthy", "service": "DevConnect API"}
+
 # Cloudflare proxy support
 @app.middleware("http")
 async def add_proxy_headers(request: Request, call_next):
