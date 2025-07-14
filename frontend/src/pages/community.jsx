@@ -19,6 +19,7 @@ import {
   Avatar,
   Badge,
   Divider,
+  Radio,
 } from "@mui/material";
 import {
   Share as ShareIcon,
@@ -47,7 +48,7 @@ export default function Communities() {
   const [joined, setJoined] = useState([]);
   const [hosted, setHosted] = useState([]);
   const [dialog, setDialog] = useState({ open: false, community: null });
-  const [create, setCreate] = useState({ name: "", description: "" });
+  const [create, setCreate] = useState({ name: "", description: "" , is_private: false});
   const userID = JSON.parse(localStorage.getItem("user")).id;
   const BASE = `${import.meta.env.VITE_API_KEY}`;
 
@@ -645,6 +646,34 @@ export default function Communities() {
                 shrink: true,
               }}
             />
+            <RadioGroup
+              row
+              aria-labelledby="demo-row-radio-buttons-group-label"
+              name="row-radio-buttons-group"
+              value={create.type}
+              onChange={(e) => setCreate({ ...create, type: e.target.value })}
+            >
+              <FormControlLabel
+                value="public"
+                control={<Radio />} label="Public"
+                sx={{
+                  color: "#ffffff",
+                  "& .Mui-checked": {
+                    color: "#3b82f6",
+                  },                    
+                }}
+              />
+              <FormControlLabel
+                value="private"
+                control={<Radio />} label="Private"
+                sx={{
+                  color: "#ffffff",
+                  "& .Mui-checked": {
+                    color: "#3b82f6",
+                  },                    
+                }}
+              />
+            </RadioGroup>
 
             <Button
               variant="contained"

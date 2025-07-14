@@ -23,14 +23,16 @@ class CommunityResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
-    is_private: bool
-    member_count: int
-    room_admin_id: str
+    is_private: bool = False
+    member_count: int = 0
+    room_admin_id: str = ""
     created_at: str
 
 class CreateCommunityRequest(BaseModel):
     name: str
     description: str
+    is_private: bool
+    
 
 # API Endpoints
 from fastapi import HTTPException, status, Depends
@@ -186,7 +188,7 @@ async def create_community(
         community_data = {
             "name": request.name,
             "description": request.description,
-            "type": "group",
+            "type": "private_group" if request.is_private else "group",
             "created_by": user_id
         }
 

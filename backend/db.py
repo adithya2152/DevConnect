@@ -552,7 +552,7 @@ async def get_joined_communities(user_id: str):
         return []
 async def add_community(room: dict):
     try:
-        response = supabase.table("rooms").insert({"name":room['name'] , "type": "group" , "description":room['description'] , "created_by":room['created_by']}).execute()
+        response = supabase.table("rooms").insert({"name":room['name'] , "type": room['type'] , "description":room['description'] , "created_by":room['created_by']}).execute()
         
         member_data = {
             "room_id":response.data[0]['id'],
