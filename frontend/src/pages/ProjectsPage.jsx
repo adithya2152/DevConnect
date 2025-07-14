@@ -831,7 +831,9 @@ function ProjectsPage() {
           status: m.status,
           })),
         applications_count: project.applications_count,
-      }));
+      }))
+      // Sort by created_at descending (newest first)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       setProjects(projectsWithMembers);
     } catch (err) {
       setError('Failed to fetch projects');
