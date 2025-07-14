@@ -20,6 +20,9 @@ import {
   Badge,
   Divider,
   Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel,
 } from "@mui/material";
 import {
   Share as ShareIcon,
@@ -45,11 +48,13 @@ export default function Communities() {
   const [tab, setTab] = useState(0);
   const [search, setSearch] = useState("");
   const [explore, setExplore] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [joined, setJoined] = useState([]);
   const [hosted, setHosted] = useState([]);
   const [dialog, setDialog] = useState({ open: false, community: null });
   const [create, setCreate] = useState({ name: "", description: "" , is_private: false});
   const userID = JSON.parse(localStorage.getItem("user")).id;
+
   const BASE = `${import.meta.env.VITE_API_KEY}`;
 
   useEffect(() => {
@@ -118,9 +123,16 @@ export default function Communities() {
 
   const handleCreate = async () => {
     try {
+      setLoading(true);
+
+      const payload = {
+        name: create.name,
+        description: create.description,
+        is_private: create.is_private
+    }
       const response = await axios.post(
         `${import.meta.env.VITE_API_KEY}/communities/add`,
-        create,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
@@ -137,6 +149,9 @@ export default function Communities() {
       fetchCommunities();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to create community");
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -568,139 +583,161 @@ export default function Communities() {
           </>
         );
 
-      case 3: // Create New
-        return (
-          <Box
-            sx={{
-              maxWidth: 600,
-              mx: "auto",
-              mt: 2,
-              p: 4,
-              bgcolor: "rgba(255, 255, 255, 0.08)",
-              borderRadius: 2,
-              boxShadow: 3,
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-            }}
-          >
-            <Box sx={{ textAlign: "center", mb: 4 }}>
-              <Avatar
-                sx={{
-                  bgcolor: "#10b981",
-                  width: 60,
-                  height: 60,
-                  mx: "auto",
-                  mb: 2,
-                }}
-              >
-                <AddIcon fontSize="large" />
-              </Avatar>
-              <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: "#ffffff" }}>
-                Create New Community
+        case 3: // Create New
+  return (
+    <Box
+      sx={{
+        maxWidth: 600,
+        mx: "auto",
+        mt: 2,
+        p: 4,
+        bgcolor: "rgba(255, 255, 255, 0.08)",
+        borderRadius: 2,
+        boxShadow: 3,
+        border: "1px solid rgba(255, 255, 255, 0.12)",
+      }}
+    >
+      <Box sx={{ textAlign: "center", mb: 4 }}>
+        <Avatar
+          sx={{
+            bgcolor: "#10b981",
+            width: 60,
+            height: 60,
+            mx: "auto",
+            mb: 2,
+          }}
+        >
+          <AddIcon fontSize="large" />
+        </Avatar>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: "#ffffff" }}>
+          Create New Community
+        </Typography>
+        <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
+          Bring people together around shared interests
+        </Typography>
+      </Box>
+
+      <Divider sx={{ my: 3, borderColor: "rgba(255, 255, 255, 0.12)" }} />
+
+      <TextField
+        fullWidth
+        label="Community Name"
+        value={create.name}
+        onChange={(e) => setCreate({ ...create, name: e.target.value })}
+        error={!create.name.trim()}
+        helperText={!create.name.trim() ? "Community name is required" : ""}
+        sx={{
+          mb: 3,
+          "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
+          "& .MuiOutlinedInput-root": {
+            "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
+            "&:hover fieldset": { borderColor: "#3b82f6" },
+            "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+          },
+          input: { color: "#ffffff" },
+        }}
+        InputLabelProps={{
+          shrink: true,
+        }}
+        inputProps={{ maxLength: 100 }}
+      />
+
+      <TextField
+        fullWidth
+        label="Description"
+        placeholder="What's this community about?"
+        value={create.description}
+        multiline
+        rows={4}
+        onChange={(e) => setCreate({ ...create, description: e.target.value })}
+        sx={{
+          mb: 4,
+          "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
+          "& .MuiOutlinedInput-root": {
+            "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
+            "&:hover fieldset": { borderColor: "#3b82f6" },
+            "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+          },
+          textarea: { color: "#ffffff" },
+        }}
+        InputLabelProps={{
+          shrink: true,
+        }}
+        inputProps={{ maxLength: 500 }}
+      />
+
+      <Typography id="community-privacy-label" variant="subtitle2" sx={{ mb: 1, color: 'white' }}>
+        Privacy Setting
+      </Typography>
+      <RadioGroup
+        row
+        aria-labelledby="community-privacy-label"
+        name="privacy-setting"
+        value={create.is_private ? 'private' : 'public'}
+        onChange={(e) => setCreate({ ...create, is_private: e.target.value === 'private' })}
+      >
+        <FormControlLabel
+          value="public"
+          control={<Radio />}
+          label={
+            <>
+              Public
+              <Typography variant="caption" display="block" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                Anyone can join and see content
               </Typography>
-              <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
-                Bring people together around shared interests
+            </>
+          }
+          sx={{
+            color: "#ffffff",
+            "& .Mui-checked": { color: "#3b82f6" },
+            mr: 3,
+          }}
+        />
+        <FormControlLabel
+          value="private"
+          control={<Radio />}
+          label={
+            <>
+              Private
+              <Typography variant="caption" display="block" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                Only invited members can join
               </Typography>
-            </Box>
+            </>
+          }
+          sx={{
+            color: "#ffffff",
+            "& .Mui-checked": { color: "#3b82f6" },
+          }}
+        />
+      </RadioGroup>
 
-            <Divider sx={{ my: 3, borderColor: "rgba(255, 255, 255, 0.12)" }} />
+      <Button
+        variant="contained"
+        size="large"
+        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
+        onClick={handleCreate}
+        disabled={!create.name.trim() || loading}
+        sx={{
+          height: 48,
+          fontSize: "1rem",
+          fontWeight: 600,
+          width: "100%",
+          backgroundColor: "#10b981",
+          "&:hover": {
+            backgroundColor: "#059669",
+          },
+          mt: 3,
+        }}
+      >
+        {loading ? "Creating..." : "Create Community"}
+      </Button>
+    </Box>
+  );
 
-            <TextField
-              fullWidth
-              label="Community Name"
-              value={create.name}
-              onChange={(e) => setCreate({ ...create, name: e.target.value })}
-              sx={{
-                mb: 3,
-                "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
-                  "&:hover fieldset": { borderColor: "#3b82f6" },
-                  "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
-                },
-                input: { color: "#ffffff" },
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Description"
-              placeholder="What's this community about?"
-              value={create.description}
-              multiline
-              rows={4}
-              onChange={(e) => setCreate({ ...create, description: e.target.value })}
-              sx={{
-                mb: 4,
-                "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
-                  "&:hover fieldset": { borderColor: "#3b82f6" },
-                  "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
-                },
-                textarea: { color: "#ffffff" },
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <RadioGroup
-              row
-              aria-labelledby="demo-row-radio-buttons-group-label"
-              name="row-radio-buttons-group"
-              value={create.type}
-              onChange={(e) => setCreate({ ...create, type: e.target.value })}
-            >
-              <FormControlLabel
-                value="public"
-                control={<Radio />} label="Public"
-                sx={{
-                  color: "#ffffff",
-                  "& .Mui-checked": {
-                    color: "#3b82f6",
-                  },                    
-                }}
-              />
-              <FormControlLabel
-                value="private"
-                control={<Radio />} label="Private"
-                sx={{
-                  color: "#ffffff",
-                  "& .Mui-checked": {
-                    color: "#3b82f6",
-                  },                    
-                }}
-              />
-            </RadioGroup>
-
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<AddIcon />}
-              onClick={handleCreate}
-              disabled={!create.name.trim()}
-              sx={{
-                height: 48,
-                fontSize: "1rem",
-                fontWeight: 600,
-                width: "100%",
-                backgroundColor: "#10b981",
-                "&:hover": {
-                  backgroundColor: "#059669",
-                },
-              }}
-            >
-              Create Community
-            </Button>
-          </Box>
-        );
-
-      default:
-        return null;
-    }
-  };
+default:
+  return null;
+      }
+    };
 
   return (
     <>
