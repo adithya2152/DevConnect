@@ -380,7 +380,7 @@ DevConnect/
 - **Supabase** for the excellent backend-as-a-service platform
 - **Material-UI** for the beautiful component library
 - **FastAPI** for the high-performance web framework
-- **OpenAI** for the AI capabilities
+- **OpenAI** for the AI capabilities  
 - **React** and **Vite** for the modern frontend development experience
 
 ## 📞 Support
@@ -389,9 +389,18 @@ If you have any questions or need help:
 - Create an issue in the repository
 - Join our community discussions
 - Check the documentation
-
-
-
 ---
 
+## 👨‍💻 Developers
+
+Meet the brains and builders behind **DevConnect**:
+
+| | Name | Role | GitHub | LinkedIn |
+|--------|------|------|--------|----------|
+| <img src="https://github.com/adithya2152.png" width="40" height="40" style="border-radius:50%;" /> | **Adithya Bharadwaj** | Full Stack Developer | [@adithya2152](https://github.com/adithya2152) | [LinkedIn](https://www.linkedin.com/in/adithya-bharadwaj-c-5701712a6/) |
+| <img src="https://github.com/ajitha26.png" width="40" height="40" style="border-radius:50%;" /> | **Ajitha Arvinth** | AI & Full Stack Developer| [@ajitha26](https://github.com/ajitha26) | [LinkedIn](https://www.linkedin.com/in/ajitha-arvinth-2953152b9/) |
+| <img src="https://github.com/Harith-Y.png" width="40" height="40" style="border-radius:50%;" /> | **Harith Yerragolam** | Full Stack Developer | [@Harith-Y](https://github.com/Harith-Y) | [LinkedIn](https://www.linkedin.com/in/harith-yerragolam/) 
+
+
 **Built with ❤️ for the developer community**
+
