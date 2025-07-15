@@ -23,8 +23,7 @@ import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
 const marshGreen = "#0e6672ff";
-const API_BASE_URL = "http://localhost:8000";
-
+const API_BASE_URL = import.meta.env.VITE_API_KEY
 const modalStyle = {
   position: "absolute",
   top: "50%",

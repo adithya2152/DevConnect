@@ -35,7 +35,7 @@ export default function Profile() {
       const user = JSON.parse(userStr);
 
       try {
-        const res = await fetch(`http://localhost:8000/api/profile/${user.id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_KEY}/api/profile/${user.id}`);
         const data = await res.json();
         setProfile({
           ...data,
@@ -57,7 +57,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/profile/update", {
+      const res = await fetch(`/${import.meta.env.VITE_API_KEY}/api/profile/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...profile, id: user.id, email: user.email }),
