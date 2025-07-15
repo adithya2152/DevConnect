@@ -215,7 +215,7 @@ export default function Dashboard() {
   };
 
   return (
-    <Box sx={{ backgroundColor: "#09435aff", minHeight: "100vh" }}>
+    <Box sx={{ minHeight: "100vh" }}>
       <NavBar />
 
       {/* Post Creation Modal */}
