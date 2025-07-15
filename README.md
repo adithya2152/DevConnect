@@ -152,14 +152,25 @@ DevConnect/
    ```env
    SUPABASE_URL=your_supabase_url
    SUPABASE_KEY=your_supabase_anon_key
+   SUPABASE_KEY_SERVICE = your_supabase_service_key
+   SUPABASE_SERVICE_KEY=your_supabase_servide_key
+   SUPABASE_JWT_SECRET=your_supabase_JWT_secret
+   SUPABASE_PROJECT_ID=supabase_project_id
+   SMTP_SERVER=smtp.gmail.com
+   SMTP_PORT=587
+   EMAIL_ADDRESS=your_email
+   EMAIL_PASSWORD=your_email)password_generated_after_2FA
    OPENROUTER_API_KEY=your_openrouter_api_key
+   NVIDIA_API_KEY=your_nvdia_api_key
+   
    ```
 
    **Frontend `.env`:**
    ```env
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   VITE_API_URL=http://localhost:8000
+   VITE_API_KEY=http://localhost:8000 #https://devconnect-fbng.onrender.com
+   MODE=development
    ```
 
 ### Database Setup
