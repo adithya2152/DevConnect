@@ -347,7 +347,6 @@ DevConnect/
 3. **Access the Application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
 
 ## 🔧 API Endpoints
 
