@@ -695,3 +695,94 @@ async def update_profile(profile: ProfileUpdate):
         print("Error updating profile:", e)
         raise HTTPException(status_code=500, detail="Failed to update profile")
 
+# --------------------
+# Data Models
+# --------------------
+
+class PostCreate(BaseModel):
+    user_id: str
+    content: str
+    tags: List[str]
+
+class LikePayload(BaseModel):
+    user_id: str
+
+class CommentPayload(BaseModel):
+    user_id: str
+    comment: str
+
+# --------------------
+# Endpoints
+# --------------------
+
+@app.get("/feed/{user_id}")
+def get_feed(user_id: str):
+    posts_response = (
+        supabase.table("posts")
+        .select(
+            "id, content, tags, created_at, "
+            "author:author_id(name), "
+            "post_likes(user_id), "
+            "post_comments(id, user_id, text, created_at, user:user_id(name))"
+        )
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    posts = posts_response.data
+
+    for post in posts:
+        post["likes"] = len(post.get("post_likes", []))
+        post["liked_by_user"] = any(like["user_id"] == user_id for like in post.get("post_likes", []))
+        post["comments"] = [
+            {
+                "text": comment["text"],
+                "author": comment.get("user"),
+                "created_at": comment["created_at"],
+            }
+            for comment in post.get("post_comments", [])
+        ]
+
+    return posts
+
+
+@app.post("/feed/create")
+def create_post(payload: PostCreate):
+    print(payload.user_id)
+    supabase.table("posts").insert({
+        "author_id": payload.user_id,
+        "content": payload.content,
+        "tags": payload.tags,
+    }).execute()
+
+    return {"message": "Post created"}
+
+
+@app.post("/feed/{post_id}/like")
+def like_post(post_id: str, payload: LikePayload):
+    existing = (
+        supabase.table("post_likes")
+        .select("*")
+        .eq("post_id", post_id)
+        .eq("user_id", payload.user_id)
+        .execute()
+    )
+
+    if not existing.data:
+        supabase.table("post_likes").insert({
+            "post_id": post_id,
+            "user_id": payload.user_id,
+        }).execute()
+
+    return {"message": "Liked"}
+
+
+@app.post("/feed/{post_id}/comment")
+def add_comment(post_id: str, payload: CommentPayload):
+    supabase.table("post_comments").insert({
+        "post_id": post_id,
+        "user_id": payload.user_id,
+        "text": payload.comment,
+    }).execute()
+
+    return {"message": "Comment added"}
