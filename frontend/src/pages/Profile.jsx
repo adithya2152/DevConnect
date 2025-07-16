@@ -68,12 +68,12 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     setLoading(true);
 
     try {
-      const res = await fetch(`/${import.meta.env.VITE_API_KEY}/api/profile/update`, {
+      const res = await fetch(`${import.meta.env.VITE_API_KEY}/api/profile/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...profile, id: user.id, email: user.email }),
@@ -81,9 +81,10 @@ export default function Profile() {
 
       if (res.ok) {
         toast.success("Profile updated successfully!");
-        setEditing(false);
+        setEditing(false); // ✅ Exit editing mode after save
       } else {
-        toast.error("Failed to update profile.");
+        const errMsg = await res.text();
+        toast.error(`Failed to update profile. ${errMsg}`);
       }
     } catch (err) {
       console.error("Error saving:", err);
@@ -92,6 +93,7 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
 
   const handleSkillAdd = () => {
     const trimmedSkill = skillInput.trim();
