@@ -314,11 +314,11 @@ export default function Dashboard() {
               <CardContent sx={{ p: 0 }}>
                 <Stack direction="row" spacing={2} alignItems="center" mb={2}>
                   <Avatar sx={{ bgcolor: marshGreen }}>
-                    {post.author?.name?.[0]?.toUpperCase() || "U"}
+                    {post.profiles.username?.[0]?.toUpperCase() || post.profiles.full_name?.[0]?.toUpperCase() || "U"}
                   </Avatar>
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {post.author?.name || "Unknown"}
+                      {post.profiles.username || post.profiles.full_name || "Unknown"}
                     </Typography>
                     <Typography variant="caption" sx={{ color: "#aaa" }}>
                       {new Date(post.created_at).toLocaleString()}

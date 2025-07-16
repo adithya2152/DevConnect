@@ -27,6 +27,8 @@ import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import LanguageIcon from "@mui/icons-material/Language";
 import CodeIcon from "@mui/icons-material/Code";
 import CancelIcon from "@mui/icons-material/Cancel";
+import toast ,{Toaster} from "react-hot-toast"
+import NavBar from "../components/nav";
 
 const neonGreen = "#00ff88";
 const darkGreen = "#00cc6a";
@@ -34,7 +36,6 @@ const darkBg = "#0a0a0a";
 const cardBg = "#1a1a1a";
 const textSecondary = "#b0b0b0";
 
-import toast from "react-hot-toast";
 
 export default function Profile() {
   const [loading, setLoading] = useState(true);
@@ -52,14 +53,21 @@ export default function Profile() {
 
       try {
         const res = await fetch(`${import.meta.env.VITE_API_KEY}/api/profile/${user.id}`);
-        const data = await res.json();
+        const {data , status} = await res.json();
         setProfile({
           ...data,
           skills: data.skills || [],
           projects: data.projects || [],
         });
+        if(status !== 200) {
+          
+          throw new Error("Failed to fetch profile");
+          
+        }
+        toast.success("Profile fetched successfully!");
       } catch (err) {
         console.error("Failed to fetch profile:", err);
+        toast.error("Failed to fetch profile" , err);
       } finally {
         setLoading(false);
       }
@@ -81,14 +89,17 @@ export default function Profile() {
 
       if (res.ok) {
         toast.success("Profile updated successfully!");
-        setEditing(false); // ✅ Exit editing mode after save
+        setEditing(false); 
       } else {
-        const errMsg = await res.text();
+        
+        const errMsg = await res.detail;
         toast.error(`Failed to update profile. ${errMsg}`);
+        throw new Error("Failed to update profile", errMsg);
+        
       }
     } catch (err) {
       console.error("Error saving:", err);
-      toast.error("Error updating profile");
+      toast.error("Error updating profile" , err);
     } finally {
       setLoading(false);
     }
@@ -187,8 +198,9 @@ export default function Profile() {
   }
 
   return (
+    <>
+    <NavBar/>
     <Box sx={{ 
-      backgroundColor: darkBg, 
       minHeight: "100vh", 
       py: 4,
       px: 2
@@ -671,5 +683,6 @@ export default function Profile() {
         </Fade>
       </Box>
     </Box>
+    </>
   );
 }

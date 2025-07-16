@@ -623,7 +623,7 @@ def get_profile(user_id: str = Path(..., title="User ID")):
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=404, detail="Profile not found")
-    return response.data
+    return {"data": response.data, "status": 200}
 
 def to_pg_array(arr):
     escaped = [str(item).replace('"', '\\"') for item in arr]
@@ -636,22 +636,13 @@ def personalized_feed(user_id: str = Path(..., title="User ID")):
     if not profile_response.data:
         raise HTTPException(404, detail="User not found")
 
-    profile = profile_response.data
-    tags = list(set((profile.get("skills") or []) + (profile.get("projects") or [])))
-    if not tags:
-        return []
-
-    # Build 'or' filter for ilike substring matching on tags text
-    or_filters = " or ".join([f"tags::text.ilike.%{tag}%" for tag in tags])
 
     posts_response = (
         supabase
         .table("posts")
-        .select("*")
+        .select("*,profiles(username , full_name)")
         .execute()
     )
-
-    
 
     return posts_response.data
 
@@ -672,6 +663,10 @@ class ProfileUpdate(BaseModel):
 @app.post("/api/profile/update")
 async def update_profile(profile: ProfileUpdate):
     try:
+        for item in profile:
+            if not item:
+                raise HTTPException(status_code=400, detail="All fields are required")
+                
         # Update profile in Supabase
         response = supabase.table("profiles").update({
             "full_name": profile.full_name,
@@ -687,7 +682,7 @@ async def update_profile(profile: ProfileUpdate):
         }).eq("id", profile.id).execute()
 
         if len(response.data) == 0:
-            raise HTTPException(status_code=404, detail="Profile not found")
+            raise HTTPException(status_code=404, detail="Profile not found" )
 
         return {"message": "Profile updated successfully", "data": response.data[0]}
 
