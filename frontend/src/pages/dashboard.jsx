@@ -23,8 +23,7 @@ import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
 const marshGreen = "#0e6672ff";
-const API_BASE_URL = "http://localhost:8000";
-
+const API_BASE_URL = import.meta.env.VITE_API_KEY
 const modalStyle = {
   position: "absolute",
   top: "50%",
@@ -216,7 +215,7 @@ export default function Dashboard() {
   };
 
   return (
-    <Box sx={{ backgroundColor: "#09435aff", minHeight: "100vh" }}>
+    <Box sx={{ minHeight: "100vh" }}>
       <NavBar />
 
       {/* Post Creation Modal */}
